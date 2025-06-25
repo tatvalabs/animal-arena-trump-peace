@@ -44,13 +44,14 @@ export const useFights = () => {
       .from('fights')
       .select(`
         *,
-        profiles:creator_id(username, email),
-        mediator_profile:mediator_id(username, email)
+        profiles!creator_id(username, email),
+        mediator_profile:profiles!mediator_id(username, email)
       `)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching fights:', error);
+      setFights([]);
     } else {
       setFights(data || []);
     }
