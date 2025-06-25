@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CreateFight from '@/components/CreateFight';
 import FightCard from '@/components/FightCard';
+import FightTimeline from '@/components/FightTimeline';
 import AuthPage from '@/components/AuthPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, Gavel, Star } from 'lucide-react';
+import { Shield, Users, Gavel, Star, Timeline } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useFights } from '@/hooks/useFights';
@@ -60,13 +61,23 @@ const Index = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-3xl font-bold text-gray-800">My Fights</h2>
-              <Button 
-                onClick={() => setCurrentView('create')}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Start New Fight
-              </Button>
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={() => setCurrentView('timeline')}
+                  variant="outline"
+                  className="border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  <Timeline className="w-4 h-4 mr-2" />
+                  View Timeline
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('create')}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Start New Fight
+                </Button>
+              </div>
             </div>
             
             {fightsLoading ? (
@@ -92,6 +103,21 @@ const Index = () => {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {currentView === 'timeline' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-bold text-gray-800">All Fights Timeline</h2>
+              <Button 
+                onClick={() => setCurrentView('fights')}
+                variant="outline"
+              >
+                Back to My Fights
+              </Button>
+            </div>
+            <FightTimeline fights={fights} loading={fightsLoading} />
           </div>
         )}
         

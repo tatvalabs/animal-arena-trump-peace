@@ -40,6 +40,9 @@ export const useFights = () => {
   const fetchFights = async () => {
     if (!user) return;
 
+    console.log('Fetching fights for user:', user.id);
+
+    // Fetch all fights for timeline and browsing
     const { data, error } = await supabase
       .from('fights')
       .select(`
@@ -53,6 +56,7 @@ export const useFights = () => {
       console.error('Error fetching fights:', error);
       setFights([]);
     } else {
+      console.log('Fetched fights:', data);
       setFights(data || []);
     }
     setLoading(false);
@@ -66,6 +70,9 @@ export const useFights = () => {
   }) => {
     if (!user) return { error: new Error('No user') };
 
+    console.log('Creating fight with data:', fightData);
+    console.log('User ID:', user.id);
+
     const { data, error } = await supabase
       .from('fights')
       .insert([{
@@ -74,6 +81,8 @@ export const useFights = () => {
       }])
       .select()
       .single();
+
+    console.log('Fight creation result:', { data, error });
 
     if (!error) {
       await fetchFights();
