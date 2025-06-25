@@ -9,7 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      fights: {
+        Row: {
+          created_at: string | null
+          creator_animal: string
+          creator_id: string
+          description: string
+          id: string
+          mediator_id: string | null
+          opponent_animal: string | null
+          opponent_email: string | null
+          resolution: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_animal: string
+          creator_id: string
+          description: string
+          id?: string
+          mediator_id?: string | null
+          opponent_animal?: string | null
+          opponent_email?: string | null
+          resolution?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_animal?: string
+          creator_id?: string
+          description?: string
+          id?: string
+          mediator_id?: string | null
+          opponent_animal?: string | null
+          opponent_email?: string | null
+          resolution?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fights_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fights_mediator_id_fkey"
+            columns: ["mediator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +104,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      animal_type:
+        | "lion"
+        | "owl"
+        | "fox"
+        | "bear"
+        | "rabbit"
+        | "elephant"
+        | "wolf"
+        | "eagle"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +227,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      animal_type: [
+        "lion",
+        "owl",
+        "fox",
+        "bear",
+        "rabbit",
+        "elephant",
+        "wolf",
+        "eagle",
+      ],
+    },
   },
 } as const

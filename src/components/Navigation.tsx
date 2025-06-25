@@ -1,15 +1,34 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Shield, Users, Plus, Gavel } from 'lucide-react';
+import { Shield, Users, Plus, Gavel, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
 
 interface NavigationProps {
   currentView: string;
   onViewChange: (view: string) => void;
-  userRole: 'fighter' | 'trump';
 }
 
-const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange, userRole }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange }) => {
+  const { signOut } = useAuth();
+  const { profile } = useProfile();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const userRole = profile?.role || 'fighter';
+
   const fighterItems = [
     { id: 'fights', label: 'My Fights', icon: Shield },
     { id: 'create', label: 'Start Fight', icon: Plus },
@@ -52,6 +71,13 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange, user
           <Badge className="bg-amber-500 text-amber-900">
             {userRole === 'trump' ? '🦅 Trump' : '🐾 Fighter'}
           </Badge>
+          <Button
+            variant="ghost"
+            onClick={handleSignOut}
+            className="text-white hover:bg-green-700"
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </nav>

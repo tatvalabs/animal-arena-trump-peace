@@ -4,24 +4,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, Users } from 'lucide-react';
+import { useFights } from '@/hooks/useFights';
+import { useToast } from '@/hooks/use-toast';
 
 interface Fight {
   id: string;
   title: string;
   description: string;
-  animal1: { name: string; emoji: string; user: string };
-  animal2: { name: string; emoji: string; user: string };
-  status: 'pending' | 'in-progress' | 'resolved';
-  createdAt: string;
+  creator_animal: string;
+  opponent_animal: string | null;
+  status: string;
+  created_at: string;
+  profiles?: {
+    username: string | null;
+    email: string | null;
+  };
+  mediator_profile?: {
+    username: string | null;
+    email: string | null;
+  };
 }
 
 interface FightCardProps {
   fight: Fight;
-  onResolve?: (fightId: string) => void;
   showResolveButton?: boolean;
 }
 
-const FightCard: React.FC<FightCardProps> = ({ fight, onResolve, showResolveButton = false }) => {
+const animals = {
+  lion: { name: 'Lion', emoji: '🦁' },
+  owl: { name: 'Owl', emoji: '🦉' },
+  fox: { name: 'Fox', emoji: '🦊' },
+  bear: { name: 'Bear', emoji: '🐻' },
+  rabbit: { name: 'Rabbit', emoji: '🐰' },
+  elephant: { name: 'Elephant', emoji: '🐘' },
+  wolf: { name: 'Wolf', emoji: '🐺' },
+  eagle: { name: 'Eagle', emoji: '🦅' },
+};
+
+const FightCard: React.FC<FightCardProps> = ({ fight, showResolveButton = false }) => {
+  const { takeFight } = useFights();
+  const { toast } = useToast();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -30,6 +53,25 @@ const FightCard: React.FC<FightCardProps> = ({ fight, onResolve, showResolveButt
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const handleResolve = async () => {
+    const { error } = await takeFight(fight.id);
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to take the fight.",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Taking on the case! ⚖️",
+        description: "You are now mediating this conflict.",
+      });
+    }
+  };
+
+  const creatorAnimal = animals[fight.creator_animal as keyof typeof animals];
+  const timeAgo = new Date(fight.created_at).toLocaleDateString();
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -47,20 +89,20 @@ const FightCard: React.FC<FightCardProps> = ({ fight, onResolve, showResolveButt
           
           <div className="flex items-center justify-between bg-amber-50 p-3 rounded-lg">
             <div className="flex items-center space-x-2">
-              <span className="text-2xl">{fight.animal1.emoji}</span>
+              <span className="text-2xl">{creatorAnimal?.emoji}</span>
               <div>
-                <p className="font-semibold text-sm">{fight.animal1.name}</p>
-                <p className="text-xs text-gray-500">{fight.animal1.user}</p>
+                <p className="font-semibold text-sm">{creatorAnimal?.name}</p>
+                <p className="text-xs text-gray-500">{fight.profiles?.username || fight.profiles?.email}</p>
               </div>
             </div>
             
             <div className="text-amber-600 font-bold">VS</div>
             
             <div className="flex items-center space-x-2">
-              <span className="text-2xl">{fight.animal2.emoji}</span>
+              <span className="text-2xl">❓</span>
               <div>
-                <p className="font-semibold text-sm">{fight.animal2.name}</p>
-                <p className="text-xs text-gray-500">{fight.animal2.user}</p>
+                <p className="font-semibold text-sm">Seeking Opponent</p>
+                <p className="text-xs text-gray-500">TBD</p>
               </div>
             </div>
           </div>
@@ -68,12 +110,12 @@ const FightCard: React.FC<FightCardProps> = ({ fight, onResolve, showResolveButt
           <div className="flex items-center justify-between text-sm text-gray-500">
             <div className="flex items-center space-x-1">
               <Clock className="w-4 h-4" />
-              <span>{fight.createdAt}</span>
+              <span>{timeAgo}</span>
             </div>
             {showResolveButton && fight.status === 'pending' && (
               <Button 
                 size="sm" 
-                onClick={() => onResolve?.(fight.id)}
+                onClick={handleResolve}
                 className="bg-green-600 hover:bg-green-700"
               >
                 Resolve Fight

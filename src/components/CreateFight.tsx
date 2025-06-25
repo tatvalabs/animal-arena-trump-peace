@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AnimalSelect from './AnimalSelect';
 import { useToast } from '@/hooks/use-toast';
+import { useFights } from '@/hooks/useFights';
 
 interface CreateFightProps {
   onFightCreated: () => void;
@@ -16,16 +17,17 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    opponentEmail: '',
-    myAnimal: '',
-    opponentAnimal: ''
+    opponent_email: '',
+    creator_animal: ''
   });
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { createFight } = useFights();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.description || !formData.myAnimal) {
+    if (!formData.title || !formData.description || !formData.creator_animal) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -34,21 +36,31 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
       return;
     }
 
-    console.log('Creating fight:', formData);
-    toast({
-      title: "Fight Registered! 🥊",
-      description: "Your conflict has been submitted and awaits resolution.",
-    });
-    
-    setFormData({
-      title: '',
-      description: '',
-      opponentEmail: '',
-      myAnimal: '',
-      opponentAnimal: ''
-    });
-    setStep(1);
-    onFightCreated();
+    setLoading(true);
+    const { error } = await createFight(formData);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create fight. Please try again.",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Fight Registered! 🥊",
+        description: "Your conflict has been submitted and awaits resolution.",
+      });
+      
+      setFormData({
+        title: '',
+        description: '',
+        opponent_email: '',
+        creator_animal: ''
+      });
+      setStep(1);
+      onFightCreated();
+    }
+    setLoading(false);
   };
 
   return (
@@ -88,13 +100,13 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="opponentEmail">Opponent's Email (Optional)</Label>
+                  <Label htmlFor="opponent_email">Opponent's Email (Optional)</Label>
                   <Input
-                    id="opponentEmail"
+                    id="opponent_email"
                     type="email"
                     placeholder="opponent@example.com"
-                    value={formData.opponentEmail}
-                    onChange={(e) => setFormData({ ...formData, opponentEmail: e.target.value })}
+                    value={formData.opponent_email}
+                    onChange={(e) => setFormData({ ...formData, opponent_email: e.target.value })}
                     className="mt-1"
                   />
                 </div>
@@ -115,8 +127,8 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
                   <Label>Choose Your Animal Persona *</Label>
                   <p className="text-sm text-gray-600 mb-4">This represents how you approach conflicts</p>
                   <AnimalSelect
-                    selectedAnimal={formData.myAnimal}
-                    onAnimalSelect={(animal) => setFormData({ ...formData, myAnimal: animal })}
+                    selectedAnimal={formData.creator_animal}
+                    onAnimalSelect={(animal) => setFormData({ ...formData, creator_animal: animal })}
                   />
                 </div>
                 
@@ -132,9 +144,9 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
                   <Button 
                     type="submit"
                     className="flex-1 bg-green-600 hover:bg-green-700"
-                    disabled={!formData.myAnimal}
+                    disabled={!formData.creator_animal || loading}
                   >
-                    Register Fight 🥊
+                    {loading ? 'Creating...' : 'Register Fight 🥊'}
                   </Button>
                 </div>
               </div>
