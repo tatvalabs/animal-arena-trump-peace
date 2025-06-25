@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +27,7 @@ interface Fight {
 interface FightCardProps {
   fight: Fight;
   showResolveButton?: boolean;
+  onViewFight?: (fightId: string) => void;
 }
 
 const animals = {
@@ -41,7 +41,7 @@ const animals = {
   eagle: { name: 'Eagle', emoji: '🦅' },
 };
 
-const FightCard: React.FC<FightCardProps> = ({ fight, showResolveButton = false }) => {
+const FightCard: React.FC<FightCardProps> = ({ fight, showResolveButton = false, onViewFight }) => {
   const { takeFight } = useFights();
   const { toast } = useToast();
 
@@ -67,6 +67,12 @@ const FightCard: React.FC<FightCardProps> = ({ fight, showResolveButton = false 
         title: "Taking on the case! ⚖️",
         description: "You are now mediating this conflict.",
       });
+    }
+  };
+
+  const handleViewFight = () => {
+    if (onViewFight) {
+      onViewFight(fight.id);
     }
   };
 
@@ -112,15 +118,27 @@ const FightCard: React.FC<FightCardProps> = ({ fight, showResolveButton = false 
               <Clock className="w-4 h-4" />
               <span>{timeAgo}</span>
             </div>
-            {showResolveButton && fight.status === 'pending' && (
-              <Button 
-                size="sm" 
-                onClick={handleResolve}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Resolve Fight
-              </Button>
-            )}
+            <div className="flex space-x-2">
+              {onViewFight && (
+                <Button 
+                  size="sm" 
+                  onClick={handleViewFight}
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
+                  👁️ View Fight
+                </Button>
+              )}
+              {showResolveButton && fight.status === 'pending' && (
+                <Button 
+                  size="sm" 
+                  onClick={handleResolve}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Resolve Fight
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

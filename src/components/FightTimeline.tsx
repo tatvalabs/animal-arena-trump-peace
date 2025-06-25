@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Clock, Users, Gavel, CheckCircle } from 'lucide-react';
 
 interface Fight {
@@ -24,6 +24,7 @@ interface Fight {
 interface FightTimelineProps {
   fights: Fight[];
   loading: boolean;
+  onViewFight?: (fightId: string) => void;
 }
 
 const animals = {
@@ -37,7 +38,7 @@ const animals = {
   eagle: { name: 'Eagle', emoji: '🦅' },
 };
 
-const FightTimeline: React.FC<FightTimelineProps> = ({ fights, loading }) => {
+const FightTimeline: React.FC<FightTimelineProps> = ({ fights, loading, onViewFight }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4 text-yellow-600" />;
@@ -102,9 +103,21 @@ const FightTimeline: React.FC<FightTimelineProps> = ({ fights, loading }) => {
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{fight.title}</CardTitle>
-                      <Badge className={getStatusColor(fight.status)}>
-                        {fight.status.replace('-', ' ')}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getStatusColor(fight.status)}>
+                          {fight.status.replace('-', ' ')}
+                        </Badge>
+                        {onViewFight && (
+                          <Button 
+                            size="sm" 
+                            onClick={() => onViewFight(fight.id)}
+                            variant="outline"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                          >
+                            👁️ View
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>

@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CreateFight from '@/components/CreateFight';
 import FightCard from '@/components/FightCard';
 import FightTimeline from '@/components/FightTimeline';
+import FightDetailPage from '@/components/FightDetailPage';
 import AuthPage from '@/components/AuthPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,8 +18,8 @@ const Index = () => {
   const { profile, loading: profileLoading } = useProfile();
   const { fights, loading: fightsLoading } = useFights();
   const [currentView, setCurrentView] = useState('fights');
+  const [selectedFightId, setSelectedFightId] = useState<string | null>(null);
 
-  // Show auth page if not authenticated
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -39,11 +39,38 @@ const Index = () => {
     setCurrentView('fights');
   };
 
+  const handleViewFight = (fightId: string) => {
+    setSelectedFightId(fightId);
+    setCurrentView('fight-detail');
+  };
+
+  const handleBackFromFight = () => {
+    setSelectedFightId(null);
+    setCurrentView('fights');
+  };
+
   const userRole = profile?.role || 'fighter';
   const myFights = fights.filter(f => f.creator_id === user.id);
   const pendingFights = fights.filter(f => f.status === 'pending');
   const myMediatedFights = fights.filter(f => f.mediator_id === user.id);
   const resolvedFights = fights.filter(f => f.status === 'resolved');
+
+  if (currentView === 'fight-detail' && selectedFightId) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation 
+          currentView={currentView} 
+          onViewChange={setCurrentView}
+        />
+        <div className="container mx-auto px-4 py-8">
+          <FightDetailPage 
+            fightId={selectedFightId} 
+            onBack={handleBackFromFight}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,7 +126,11 @@ const Index = () => {
             ) : (
               <div className="grid gap-6">
                 {myFights.map((fight) => (
-                  <FightCard key={fight.id} fight={fight} />
+                  <FightCard 
+                    key={fight.id} 
+                    fight={fight} 
+                    onViewFight={handleViewFight}
+                  />
                 ))}
               </div>
             )}
@@ -117,7 +148,7 @@ const Index = () => {
                 Back to My Fights
               </Button>
             </div>
-            <FightTimeline fights={fights} loading={fightsLoading} />
+            <FightTimeline fights={fights} loading={fightsLoading} onViewFight={handleViewFight} />
           </div>
         )}
         
@@ -137,7 +168,11 @@ const Index = () => {
             ) : (
               <div className="grid gap-6">
                 {pendingFights.map((fight) => (
-                  <FightCard key={fight.id} fight={fight} />
+                  <FightCard 
+                    key={fight.id} 
+                    fight={fight} 
+                    onViewFight={handleViewFight}
+                  />
                 ))}
               </div>
             )}
@@ -171,6 +206,7 @@ const Index = () => {
                     key={fight.id} 
                     fight={fight} 
                     showResolveButton={true}
+                    onViewFight={handleViewFight}
                   />
                 ))}
               </div>
@@ -194,7 +230,11 @@ const Index = () => {
             ) : (
               <div className="grid gap-6">
                 {myMediatedFights.filter(f => f.status === 'resolved').map((fight) => (
-                  <FightCard key={fight.id} fight={fight} />
+                  <FightCard 
+                    key={fight.id} 
+                    fight={fight} 
+                    onViewFight={handleViewFight}
+                  />
                 ))}
               </div>
             )}
