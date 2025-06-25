@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Shield, Users, Plus, Gavel, LogOut, Timeline } from 'lucide-react';
+import { Shield, Users, Plus, Gavel, LogOut, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
@@ -33,13 +32,13 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange }) =>
     { id: 'fights', label: 'My Fights', icon: Shield },
     { id: 'create', label: 'Start Fight', icon: Plus },
     { id: 'browse', label: 'Browse Fights', icon: Users },
-    { id: 'timeline', label: 'Timeline', icon: Timeline },
+    { id: 'timeline', label: 'Timeline', icon: Clock },
   ];
 
   const trumpItems = [
     { id: 'resolve', label: 'Resolve Fights', icon: Gavel },
     { id: 'resolved', label: 'Resolved Cases', icon: Shield },
-    { id: 'timeline', label: 'Timeline', icon: Timeline },
+    { id: 'timeline', label: 'Timeline', icon: Clock },
   ];
 
   const items = userRole === 'trump' ? trumpItems : fighterItems;

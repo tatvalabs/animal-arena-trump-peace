@@ -8,7 +8,7 @@ import AuthPage from '@/components/AuthPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, Gavel, Star, Timeline } from 'lucide-react';
+import { Shield, Users, Gavel, Star, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useFights } from '@/hooks/useFights';
@@ -67,7 +67,7 @@ const Index = () => {
                   variant="outline"
                   className="border-green-600 text-green-600 hover:bg-green-50"
                 >
-                  <Timeline className="w-4 h-4 mr-2" />
+                  <Clock className="w-4 h-4 mr-2" />
                   View Timeline
                 </Button>
                 <Button 
