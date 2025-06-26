@@ -9,15 +9,18 @@ import ProfilePage from '@/components/ProfilePage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, Gavel, Star, Clock } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Shield, Users, Gavel, Star, Clock, Bell, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useFights } from '@/hooks/useFights';
+import { useMediatorRequests } from '@/hooks/useMediatorRequests';
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { fights, loading: fightsLoading } = useFights();
+  const { requests } = useMediatorRequests();
   const [currentView, setCurrentView] = useState('fights');
   const [selectedFightId, setSelectedFightId] = useState<string | null>(null);
 
@@ -55,6 +58,20 @@ const Index = () => {
   const pendingFights = fights.filter(f => f.status === 'pending');
   const myMediatedFights = fights.filter(f => f.mediator_id === user.id);
   const resolvedFights = fights.filter(f => f.status === 'resolved');
+  
+  // New: Fight invites (fights where user is invited as opponent via email)
+  const fightInvites = fights.filter(f => 
+    f.opponent_email === user.email && f.creator_id !== user.id
+  );
+  
+  // New: Fights needing user action
+  const pendingMediatorRequests = requests.filter(r => 
+    r.status === 'pending' && 
+    r.fights?.creator_id === user.id
+  );
+  
+  // New: Count of actions needed
+  const actionsNeeded = fightInvites.length + pendingMediatorRequests.length;
 
   if (currentView === 'fight-detail' && selectedFightId) {
     return (
@@ -102,7 +119,15 @@ const Index = () => {
         {currentView === 'fights' && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-gray-800">My Fights</h2>
+              <div className="flex items-center space-x-4">
+                <h2 className="text-3xl font-bold text-gray-800">My Fights</h2>
+                {actionsNeeded > 0 && (
+                  <Badge className="bg-red-100 text-red-800 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {actionsNeeded} Action{actionsNeeded > 1 ? 's' : ''} Needed
+                  </Badge>
+                )}
+              </div>
               <div className="flex space-x-2">
                 <Button 
                   onClick={() => setCurrentView('timeline')}
@@ -126,28 +151,152 @@ const Index = () => {
               <div className="text-center py-8">
                 <p className="text-gray-600">Loading fights...</p>
               </div>
-            ) : myFights.length === 0 ? (
-              <div className="text-center py-12">
-                <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No fights yet</h3>
-                <p className="text-gray-500 mb-4">Start your first conflict resolution journey</p>
-                <Button 
-                  onClick={() => setCurrentView('create')}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Register Your First Fight
-                </Button>
-              </div>
             ) : (
-              <div className="grid gap-6">
-                {myFights.map((fight) => (
-                  <FightCard 
-                    key={fight.id} 
-                    fight={fight} 
-                    onViewFight={handleViewFight}
-                  />
-                ))}
-              </div>
+              <Tabs defaultValue="my-fights" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="my-fights" className="flex items-center space-x-2">
+                    <Shield className="w-4 h-4" />
+                    <span>My Fights ({myFights.length})</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="invites" className="flex items-center space-x-2">
+                    <Bell className="w-4 h-4" />
+                    <span>Fight Invites ({fightInvites.length})</span>
+                    {fightInvites.length > 0 && (
+                      <Badge className="bg-orange-100 text-orange-800 ml-1">New</Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="actions" className="flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Action Required ({pendingMediatorRequests.length})</span>
+                    {pendingMediatorRequests.length > 0 && (
+                      <Badge className="bg-red-100 text-red-800 ml-1">!</Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="my-fights" className="space-y-4">
+                  {myFights.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">No fights yet</h3>
+                      <p className="text-gray-500 mb-4">Start your first conflict resolution journey</p>
+                      <Button 
+                        onClick={() => setCurrentView('create')}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Register Your First Fight
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid gap-6">
+                      {myFights.map((fight) => (
+                        <FightCard 
+                          key={fight.id} 
+                          fight={fight} 
+                          onViewFight={handleViewFight}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="invites" className="space-y-4">
+                  {fightInvites.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">No fight invites</h3>
+                      <p className="text-gray-500">You haven't been invited to any fights yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center">
+                          <Bell className="w-5 h-5 text-orange-600 mr-2" />
+                          <h3 className="font-semibold text-orange-800">Fight Invitations</h3>
+                        </div>
+                        <p className="text-sm text-orange-700 mt-1">
+                          You've been invited to participate in these conflicts as an opponent.
+                        </p>
+                      </div>
+                      <div className="grid gap-6">
+                        {fightInvites.map((fight) => (
+                          <div key={fight.id} className="relative">
+                            <Badge className="absolute -top-2 -right-2 bg-orange-100 text-orange-800 z-10">
+                              Invitation
+                            </Badge>
+                            <FightCard 
+                              fight={fight} 
+                              onViewFight={handleViewFight}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="actions" className="space-y-4">
+                  {pendingMediatorRequests.length === 0 ? (
+                    <div className="text-center py-12">
+                      <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">No actions required</h3>
+                      <p className="text-gray-500">All requests have been reviewed</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center">
+                          <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+                          <h3 className="font-semibold text-red-800">Mediator Requests Pending</h3>
+                        </div>
+                        <p className="text-sm text-red-700 mt-1">
+                          These mediator requests need your approval or rejection.
+                        </p>
+                      </div>
+                      <div className="grid gap-4">
+                        {pendingMediatorRequests.map((request) => (
+                          <Card key={request.id} className="border-red-200 bg-red-50">
+                            <CardHeader className="pb-3">
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="text-lg">{request.fights?.title}</CardTitle>
+                                <Badge className="bg-red-100 text-red-800">Action Required</Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="text-sm text-gray-600">
+                                    <strong>Mediator:</strong> {request.profiles?.username || request.profiles?.email}
+                                  </p>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    <strong>Proposal:</strong> {request.proposal_message}
+                                  </p>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <Button 
+                                    onClick={() => setCurrentView('profile')}
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    Review in Profile
+                                  </Button>
+                                  <Button 
+                                    onClick={() => handleViewFight(request.fight_id)}
+                                    size="sm"
+                                    variant="outline"
+                                  >
+                                    View Fight
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             )}
           </div>
         )}
