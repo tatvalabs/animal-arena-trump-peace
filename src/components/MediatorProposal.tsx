@@ -7,24 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Gavel, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useMediatorRequests } from '@/hooks/useMediatorRequests';
 
 interface MediatorProposalProps {
   fightId: string;
   fightTitle: string;
-  onPropose: (fightId: string, proposal: string) => Promise<void>;
   canPropose: boolean;
 }
 
 const MediatorProposal: React.FC<MediatorProposalProps> = ({ 
   fightId, 
   fightTitle, 
-  onPropose, 
   canPropose 
 }) => {
   const [proposal, setProposal] = useState('');
   const [isProposing, setIsProposing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
+  const { createRequest } = useMediatorRequests();
 
   const handlePropose = async () => {
     if (!proposal.trim()) {
@@ -38,14 +38,19 @@ const MediatorProposal: React.FC<MediatorProposalProps> = ({
 
     setIsProposing(true);
     try {
-      await onPropose(fightId, proposal);
+      const { error } = await createRequest(fightId, proposal);
+      if (error) {
+        throw error;
+      }
+      
       toast({
         title: "🦅 Mediation Proposal Sent!",
-        description: "Both fighters will be notified of your proposal.",
+        description: "The fighter will be notified of your proposal.",
       });
       setProposal('');
       setShowForm(false);
     } catch (error) {
+      console.error('Error sending proposal:', error);
       toast({
         title: "Error",
         description: "Failed to send proposal. Please try again.",
@@ -83,7 +88,7 @@ const MediatorProposal: React.FC<MediatorProposalProps> = ({
             </p>
             <div className="flex items-center space-x-2 text-sm text-blue-600">
               <CheckCircle className="w-4 h-4" />
-              <span>Both fighters must approve your mediation</span>
+              <span>The fighter must approve your mediation</span>
             </div>
             <Button 
               onClick={() => setShowForm(true)}
@@ -113,8 +118,8 @@ const MediatorProposal: React.FC<MediatorProposalProps> = ({
                 <div className="text-blue-800">
                   <p className="font-medium">How it works:</p>
                   <ul className="list-disc list-inside space-y-1 text-xs mt-1">
-                    <li>Your proposal will be sent to both fighters</li>
-                    <li>Both must approve you as mediator</li>
+                    <li>Your proposal will be sent to the fighter</li>
+                    <li>They must approve you as mediator</li>
                     <li>Once approved, you can offer trade deals, threats, counseling, or negotiation</li>
                   </ul>
                 </div>

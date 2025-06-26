@@ -5,6 +5,7 @@ import FightCard from '@/components/FightCard';
 import FightTimeline from '@/components/FightTimeline';
 import FightDetailPage from '@/components/FightDetailPage';
 import AuthPage from '@/components/AuthPage';
+import ProfilePage from '@/components/ProfilePage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +73,20 @@ const Index = () => {
     );
   }
 
+  if (currentView === 'profile') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation 
+          currentView={currentView} 
+          onViewChange={setCurrentView}
+        />
+        <div className="container mx-auto px-4 py-8">
+          <ProfilePage />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation 
@@ -99,7 +114,7 @@ const Index = () => {
                 </Button>
                 <Button 
                   onClick={() => setCurrentView('create')}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-red-600 hover:bg-red-700"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Start New Fight
@@ -118,7 +133,7 @@ const Index = () => {
                 <p className="text-gray-500 mb-4">Start your first conflict resolution journey</p>
                 <Button 
                   onClick={() => setCurrentView('create')}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-red-600 hover:bg-red-700"
                 >
                   Register Your First Fight
                 </Button>
@@ -137,12 +152,48 @@ const Index = () => {
           </div>
         )}
 
+        {currentView === 'browse' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-800">Browse All Fights</h2>
+                <p className="text-gray-600 mt-1">Global timeline of all ongoing conflicts</p>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              {fightsLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">Loading fights...</p>
+                </div>
+              ) : fights.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No fights yet</h3>
+                  <p className="text-gray-500">Be the first to start a conflict!</p>
+                </div>
+              ) : (
+                fights
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((fight) => (
+                    <FightCard 
+                      key={fight.id} 
+                      fight={fight} 
+                      onViewFight={handleViewFight}
+                      showMediatorProposal={fight.creator_id !== user.id}
+                    />
+                  ))
+              )}
+            </div>
+          </div>
+        )}
+
         {currentView === 'timeline' && (
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-3xl font-bold text-gray-800">All Fights Timeline</h2>
-                <p className="text-gray-600 mt-1">Volunteer as Trump mediator for pending conflicts</p>
+                <h2 className="text-3xl font-bold text-gray-800">My Activity Timeline</h2>
+                <p className="text-gray-600 mt-1">Historical record of your fights and mediations</p>
               </div>
               <Button 
                 onClick={() => setCurrentView('fights')}
@@ -155,54 +206,26 @@ const Index = () => {
             <div className="space-y-6">
               {fightsLoading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">Loading fights...</p>
+                  <p className="text-gray-600">Loading timeline...</p>
                 </div>
-              ) : fights.length === 0 ? (
+              ) : [...myFights, ...myMediatedFights].length === 0 ? (
                 <div className="text-center py-12">
-                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No fights yet</h3>
-                  <p className="text-gray-500">The timeline will show all fights as they are created</p>
+                  <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No activity yet</h3>
+                  <p className="text-gray-500">Your activity timeline will appear here</p>
                 </div>
               ) : (
-                fights
+                [...myFights, ...myMediatedFights]
                   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                   .map((fight) => (
                     <FightCard 
                       key={fight.id} 
                       fight={fight} 
                       onViewFight={handleViewFight}
-                      showMediatorProposal={true}
                     />
                   ))
               )}
             </div>
-          </div>
-        )}
-        
-        {currentView === 'browse' && (
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">All Active Fights</h2>
-            {fightsLoading ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600">Loading fights...</p>
-              </div>
-            ) : pendingFights.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No active fights</h3>
-                <p className="text-gray-500">All conflicts are resolved for now</p>
-              </div>
-            ) : (
-              <div className="grid gap-6">
-                {pendingFights.map((fight) => (
-                  <FightCard 
-                    key={fight.id} 
-                    fight={fight} 
-                    onViewFight={handleViewFight}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
         

@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      fight_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          fight_id: string
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          fight_id: string
+          id?: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          fight_id?: string
+          id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fight_activities_fight_id_fkey"
+            columns: ["fight_id"]
+            isOneToOne: false
+            referencedRelation: "fights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fight_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fights: {
         Row: {
           created_at: string | null
@@ -62,6 +104,57 @@ export type Database = {
           },
           {
             foreignKeyName: "fights_mediator_id_fkey"
+            columns: ["mediator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mediator_requests: {
+        Row: {
+          created_at: string | null
+          creator_response: string | null
+          fight_id: string
+          id: string
+          mediator_id: string
+          opponent_response: string | null
+          proposal_message: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_response?: string | null
+          fight_id: string
+          id?: string
+          mediator_id: string
+          opponent_response?: string | null
+          proposal_message: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_response?: string | null
+          fight_id?: string
+          id?: string
+          mediator_id?: string
+          opponent_response?: string | null
+          proposal_message?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mediator_requests_fight_id_fkey"
+            columns: ["fight_id"]
+            isOneToOne: false
+            referencedRelation: "fights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mediator_requests_mediator_id_fkey"
             columns: ["mediator_id"]
             isOneToOne: false
             referencedRelation: "profiles"

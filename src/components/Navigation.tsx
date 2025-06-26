@@ -1,8 +1,11 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Shield, Users, Plus, Gavel, LogOut, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Shield, Users, Clock, Star, Gavel, User, Eye, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useMediatorRequests } from '@/hooks/useMediatorRequests';
 import { useToast } from '@/hooks/use-toast';
 
 interface NavigationProps {
@@ -13,82 +16,125 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange }) => {
   const { signOut } = useAuth();
   const { profile } = useProfile();
+  const { requests } = useMediatorRequests();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to sign out",
+        title: "Error signing out",
+        description: error.message,
         variant: "destructive"
       });
     }
   };
 
   const userRole = profile?.role || 'fighter';
+  const pendingRequests = requests.filter(r => r.status === 'pending').length;
 
-  const fighterItems = [
-    { id: 'fights', label: 'My Fights', icon: Shield },
-    { id: 'create', label: 'Start Fight', icon: Plus },
-    { id: 'browse', label: 'Browse Fights', icon: Users },
-    { id: 'timeline', label: 'Timeline', icon: Clock },
+  const navItems = [
+    {
+      id: 'fights',
+      label: 'My Fights',
+      icon: Shield,
+      color: 'bg-red-600 hover:bg-red-700 text-white',
+      show: true
+    },
+    {
+      id: 'create',
+      label: 'Start Fight',
+      icon: Users,
+      color: 'bg-orange-600 hover:bg-orange-700 text-white',
+      show: true
+    },
+    {
+      id: 'browse',
+      label: 'Browse Fights',
+      icon: Eye,
+      color: 'bg-blue-600 hover:bg-blue-700 text-white',
+      show: true
+    },
+    {
+      id: 'timeline',
+      label: 'Timeline',
+      icon: Clock,
+      color: 'bg-purple-600 hover:bg-purple-700 text-white',
+      show: true
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: User,
+      color: 'bg-green-600 hover:bg-green-700 text-white',
+      show: true,
+      badge: pendingRequests > 0 ? pendingRequests : null
+    },
+    {
+      id: 'resolve',
+      label: 'Resolve',
+      icon: Gavel,
+      color: 'bg-amber-600 hover:bg-amber-700 text-white',
+      show: userRole === 'trump'
+    },
+    {
+      id: 'resolved',
+      label: 'Resolved',
+      icon: Star,
+      color: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+      show: userRole === 'trump'
+    }
   ];
-
-  const trumpItems = [
-    { id: 'resolve', label: 'Resolve Fights', icon: Gavel },
-    { id: 'resolved', label: 'Resolved Cases', icon: Shield },
-    { id: 'timeline', label: 'Timeline', icon: Clock },
-  ];
-
-  const items = userRole === 'trump' ? trumpItems : fighterItems;
 
   return (
-    <nav className="bg-green-600 text-white p-4">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Shield className="w-8 h-8" />
-          <h1 className="text-2xl font-bold">Ceasefire</h1>
-        </div>
-        
-        <div className="flex space-x-2">
-          {items.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <Button
-                key={item.id}
-                variant={currentView === item.id ? "secondary" : "ghost"}
-                onClick={() => onViewChange(item.id)}
-                className="text-white hover:bg-green-700"
-              >
-                <IconComponent className="w-4 h-4 mr-2" />
-                {item.label}
-              </Button>
-            );
-          })}
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Badge className="bg-amber-500 text-amber-900">
-            {userRole === 'trump' ? '🦅 Trump' : '🐾 Fighter'}
-          </Badge>
-          <Button
-            variant="ghost"
-            onClick={handleSignOut}
-            className="text-white hover:bg-green-700"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
+    <nav className="bg-white shadow-lg border-b-2 border-gray-200">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center space-x-2">
+            <Shield className="w-8 h-8 text-red-600" />
+            <h1 className="text-xl font-bold text-gray-800">Ceasefire</h1>
+            {userRole === 'trump' && (
+              <Badge className="bg-amber-100 text-amber-800 ml-2">
+                <Gavel className="w-3 h-3 mr-1" />
+                Trump Mediator
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {navItems.filter(item => item.show).map((item) => (
+              <div key={item.id} className="relative">
+                <Button
+                  onClick={() => onViewChange(item.id)}
+                  variant={currentView === item.id ? "default" : "outline"}
+                  className={currentView === item.id ? item.color : "border-gray-300 hover:bg-gray-50"}
+                  size="sm"
+                >
+                  <item.icon className="w-4 h-4 mr-2" />
+                  {item.label}
+                </Button>
+                {item.badge && (
+                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1 min-w-[20px] h-5 flex items-center justify-center rounded-full">
+                    {item.badge}
+                  </Badge>
+                )}
+              </div>
+            ))}
+            
+            <Button
+              onClick={handleSignOut}
+              variant="outline"
+              size="sm"
+              className="border-red-300 text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </div>
     </nav>
   );
 };
-
-const Badge: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
-  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${className}`}>
-    {children}
-  </span>
-);
 
 export default Navigation;

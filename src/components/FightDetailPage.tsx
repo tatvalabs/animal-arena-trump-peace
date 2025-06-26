@@ -17,6 +17,8 @@ import {
   Bell,
   Star,
   Gavel,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import { useFights } from '@/hooks/useFights';
 import { useAuth } from '@/hooks/useAuth';
@@ -70,7 +72,9 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   const userRole = profile?.role || 'fighter';
   const isTrump = userRole === 'trump';
   const isCreator = fight?.creator_id === user?.id;
-  const canMediate = isTrump && fight?.status === 'pending';
+  const isMediator = fight?.mediator_id === user?.id;
+  const canMediate = isMediator && fight?.status === 'in-progress';
+  const canResolve = (isCreator || isMediator) && fight?.status === 'in-progress';
 
   useEffect(() => {
     // Simulate real-time updates
@@ -137,6 +141,24 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
       toast({
         title: "🦅 Trump has entered the arena!",
         description: "Time to make some deals and resolve this conflict!",
+      });
+    }
+  };
+
+  const handleResolve = async () => {
+    const resolution = `Fight resolved by ${isCreator ? 'fighter' : 'mediator'}`;
+    const { error } = await resolveFight(fightId, resolution);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to resolve the fight.",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "🏆 Fight Resolved!",
+        description: "The conflict has been resolved!",
       });
     }
   };
@@ -243,7 +265,7 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
         </div>
       </div>
 
-      {/* Fight Details */}
+      {/* Fight Details Card */}
       <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
         <CardHeader>
           <div className="flex justify-between items-start">
@@ -259,151 +281,171 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <p className="text-gray-700 text-lg leading-relaxed">{fight.description}</p>
-            
-            {/* Fighters */}
-            <div className="bg-white p-4 rounded-lg border-2 border-amber-200">
-              <h3 className="font-bold text-amber-900 mb-3 flex items-center">
-                <Shield className="w-5 h-5 mr-2" />
-                Combatants
-              </h3>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-4xl">{creatorAnimal?.emoji}</span>
-                  <div>
-                    <p className="font-bold text-lg">{creatorAnimal?.name}</p>
-                    <p className="text-sm text-gray-600">{fight.profiles?.username || fight.profiles?.email}</p>
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600">VS</div>
-                  <div className="text-xs text-gray-500">Conflict Zone</div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <p className="font-bold text-lg">Seeking Opponent</p>
-                    <p className="text-sm text-gray-600">Open Challenge</p>
-                  </div>
-                  <span className="text-4xl">❓</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Mediation Section */}
-            {fight.status === 'resolved' && fight.resolution && (
-              <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-                <h3 className="font-bold text-green-900 mb-2 flex items-center">
-                  <Star className="w-5 h-5 mr-2" />
-                  Resolution
-                </h3>
-                <p className="text-green-800">{fight.resolution}</p>
-                {fight.mediator_profile && (
-                  <p className="text-sm text-green-600 mt-2">
-                    Resolved by: {fight.mediator_profile.username || fight.mediator_profile.email}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Trump Actions */}
-            {canMediate && (
-              <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-                <h3 className="font-bold text-blue-900 mb-3 flex items-center">
-                  <Avatar className="w-6 h-6 mr-2">
-                    <AvatarImage 
-                      src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=100&h=100&fit=crop&crop=face" 
-                      alt="Trump Mediator" 
-                    />
-                    <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">🦅</AvatarFallback>
-                  </Avatar>
-                  <Gavel className="w-5 h-5 mr-2" />
-                  Trump Mediation Center
-                </h3>
-                <div className="space-y-3">
-                  {fight.mediator_id !== user?.id ? (
-                    <Button 
-                      onClick={handleTakeFight}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
-                    >
-                      🦅 Take Control of This Conflict
-                    </Button>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-blue-800 font-medium">You are mediating this conflict!</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {mediationOptions.map((option) => (
-                          <Dialog key={option.id}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={`${option.color} border-2 p-4 h-auto flex-col space-y-2`}
-                                onClick={() => {
-                                  setSelectedMediationType(option.id);
-                                  setShowMediationDialog(true);
-                                }}
-                              >
-                                <div className="text-2xl">{option.emoji}</div>
-                                <div className="font-semibold">{option.label}</div>
-                                <div className="text-xs text-center">{option.description}</div>
-                              </Button>
-                            </DialogTrigger>
-                          </Dialog>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Spectator Comments */}
-            <div className="bg-gray-50 p-4 rounded-lg border">
-              <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                <MessageSquare className="w-5 h-5 mr-2" />
-                Spectator Commentary ({spectatorCount} watching)
-              </h3>
-              
-              <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
-                {mediationComments.length === 0 ? (
-                  <p className="text-gray-500 text-sm italic">No comments yet. Be the first to share your thoughts!</p>
-                ) : (
-                  mediationComments.map((comment) => (
-                    <div key={comment.id} className="bg-white p-2 rounded text-sm">
-                      <span className="font-medium text-blue-600">{comment.user}</span>
-                      <span className="text-gray-500 text-xs ml-2">{comment.timestamp}</span>
-                      <p className="text-gray-700 mt-1">{comment.text}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-              
-              <div className="flex space-x-2">
-                <Textarea
-                  placeholder="Share your thoughts on this conflict..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="flex-1"
-                  rows={2}
-                />
-                <Button onClick={addComment} disabled={!newComment.trim()}>
-                  Post
+          <p className="text-gray-700 text-lg leading-relaxed mb-6">{fight.description}</p>
+          
+          {/* Action Buttons */}
+          {canResolve && (
+            <div className="flex space-x-2 mb-6">
+              <Button
+                onClick={handleResolve}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Resolve Fight
+              </Button>
+              {canMediate && (
+                <Button
+                  onClick={() => setShowMediationDialog(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Gavel className="w-4 h-4 mr-2" />
+                  Ceasefire Mediation
                 </Button>
+              )}
+            </div>
+          )}
+
+          {/* Fighters */}
+          <div className="bg-white p-4 rounded-lg border-2 border-amber-200">
+            <h3 className="font-bold text-amber-900 mb-3 flex items-center">
+              <Shield className="w-5 h-5 mr-2" />
+              Combatants
+            </h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <span className="text-4xl">{creatorAnimal?.emoji}</span>
+                <div>
+                  <p className="font-bold text-lg">{creatorAnimal?.name}</p>
+                  <p className="text-sm text-gray-600">{fight.profiles?.username || fight.profiles?.email}</p>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-3xl font-bold text-amber-600">VS</div>
+                <div className="text-xs text-gray-500">Conflict Zone</div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="font-bold text-lg">Seeking Opponent</p>
+                  <p className="text-sm text-gray-600">Open Challenge</p>
+                </div>
+                <span className="text-4xl">❓</span>
               </div>
             </div>
+          </div>
 
-            {/* Fight Stats */}
-            <div className="flex items-center justify-between text-sm text-gray-500 bg-gray-50 p-3 rounded">
-              <div className="flex items-center space-x-1">
-                <Clock className="w-4 h-4" />
-                <span>Created: {timeAgo}</span>
+          {/* Mediation Section */}
+          {fight.status === 'resolved' && fight.resolution && (
+            <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
+              <h3 className="font-bold text-green-900 mb-2 flex items-center">
+                <Star className="w-5 h-5 mr-2" />
+                Resolution
+              </h3>
+              <p className="text-green-800">{fight.resolution}</p>
+              {fight.mediator_profile && (
+                <p className="text-sm text-green-600 mt-2">
+                  Resolved by: {fight.mediator_profile.username || fight.mediator_profile.email}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Trump Actions */}
+          {canMediate && (
+            <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+              <h3 className="font-bold text-blue-900 mb-3 flex items-center">
+                <Avatar className="w-6 h-6 mr-2">
+                  <AvatarImage 
+                    src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=100&h=100&fit=crop&crop=face" 
+                    alt="Trump Mediator" 
+                  />
+                  <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">🦅</AvatarFallback>
+                </Avatar>
+                <Gavel className="w-5 h-5 mr-2" />
+                Trump Mediation Center
+              </h3>
+              <div className="space-y-3">
+                {fight.mediator_id !== user?.id ? (
+                  <Button 
+                    onClick={handleTakeFight}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+                  >
+                    🦅 Take Control of This Conflict
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-blue-800 font-medium">You are mediating this conflict!</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {mediationOptions.map((option) => (
+                        <Dialog key={option.id}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={`${option.color} border-2 p-4 h-auto flex-col space-y-2`}
+                              onClick={() => {
+                                setSelectedMediationType(option.id);
+                                setShowMediationDialog(true);
+                              }}
+                            >
+                              <div className="text-2xl">{option.emoji}</div>
+                              <div className="font-semibold">{option.label}</div>
+                              <div className="text-xs text-center">{option.description}</div>
+                            </Button>
+                          </DialogTrigger>
+                        </Dialog>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center space-x-1">
-                <Users className="w-4 h-4" />
-                <span>{spectatorCount} spectators</span>
-              </div>
+            </div>
+          )}
+
+          {/* Spectator Comments */}
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2" />
+              Spectator Commentary ({spectatorCount} watching)
+            </h3>
+            
+            <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
+              {mediationComments.length === 0 ? (
+                <p className="text-gray-500 text-sm italic">No comments yet. Be the first to share your thoughts!</p>
+              ) : (
+                mediationComments.map((comment) => (
+                  <div key={comment.id} className="bg-white p-2 rounded text-sm">
+                    <span className="font-medium text-blue-600">{comment.user}</span>
+                    <span className="text-gray-500 text-xs ml-2">{comment.timestamp}</span>
+                    <p className="text-gray-700 mt-1">{comment.text}</p>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            <div className="flex space-x-2">
+              <Textarea
+                placeholder="Share your thoughts on this conflict..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1"
+                rows={2}
+              />
+              <Button onClick={addComment} disabled={!newComment.trim()}>
+                Post
+              </Button>
+            </div>
+          </div>
+
+          {/* Fight Stats */}
+          <div className="flex items-center justify-between text-sm text-gray-500 bg-gray-50 p-3 rounded">
+            <div className="flex items-center space-x-1">
+              <Clock className="w-4 h-4" />
+              <span>Created: {timeAgo}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Users className="w-4 h-4" />
+              <span>{spectatorCount} spectators</span>
             </div>
           </div>
         </CardContent>
