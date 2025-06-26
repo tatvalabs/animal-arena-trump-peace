@@ -18,6 +18,7 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
     title: '',
     description: '',
     opponent_email: '',
+    opponent_username: '',
     creator_animal: ''
   });
   const [step, setStep] = useState(1);
@@ -27,10 +28,21 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.description || !formData.creator_animal) {
+    if (!formData.title || !formData.description || !formData.creator_animal || !formData.opponent_email) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields including opponent's email.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.opponent_email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address for your opponent.",
         variant: "destructive"
       });
       return;
@@ -55,6 +67,7 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
         title: '',
         description: '',
         opponent_email: '',
+        opponent_username: '',
         creator_animal: ''
       });
       setStep(1);
@@ -99,22 +112,48 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor="opponent_email">Opponent's Email (Optional)</Label>
-                  <Input
-                    id="opponent_email"
-                    type="email"
-                    placeholder="opponent@example.com"
-                    value={formData.opponent_email}
-                    onChange={(e) => setFormData({ ...formData, opponent_email: e.target.value })}
-                    className="mt-1"
-                  />
+                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                  <h3 className="font-semibold text-amber-800 mb-3">Your Opponent 🎯</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="opponent_email">Opponent's Email *</Label>
+                      <Input
+                        id="opponent_email"
+                        type="email"
+                        placeholder="opponent@example.com"
+                        value={formData.opponent_email}
+                        onChange={(e) => setFormData({ ...formData, opponent_email: e.target.value })}
+                        className="mt-1"
+                        required
+                      />
+                      <p className="text-xs text-amber-600 mt-1">Required: We need to notify your opponent</p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="opponent_username">Tag Opponent's Username (Optional)</Label>
+                      <Input
+                        id="opponent_username"
+                        placeholder="@username"
+                        value={formData.opponent_username}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          if (value && !value.startsWith('@')) {
+                            value = '@' + value;
+                          }
+                          setFormData({ ...formData, opponent_username: value });
+                        }}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">If they have a Ceasefire account</p>
+                    </div>
+                  </div>
                 </div>
                 
                 <Button 
                   type="button" 
                   onClick={() => setStep(2)}
                   className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={!formData.title || !formData.description || !formData.opponent_email}
                 >
                   Choose Your Animal Persona
                 </Button>

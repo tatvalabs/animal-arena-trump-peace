@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Clock, Users, Gavel, CheckCircle } from 'lucide-react';
 
 interface Fight {
@@ -11,6 +13,7 @@ interface Fight {
   creator_animal: string;
   status: string;
   created_at: string;
+  creator_id: string;
   profiles?: {
     username: string | null;
     email: string | null;
@@ -36,6 +39,18 @@ const animals = {
   elephant: { name: 'Elephant', emoji: '🐘' },
   wolf: { name: 'Wolf', emoji: '🐺' },
   eagle: { name: 'Eagle', emoji: '🦅' },
+  tiger: { name: 'Tiger', emoji: '🐅' },
+  shark: { name: 'Shark', emoji: '🦈' },
+  dragon: { name: 'Dragon', emoji: '🐉' },
+  snake: { name: 'Snake', emoji: '🐍' },
+  gorilla: { name: 'Gorilla', emoji: '🦍' },
+  cheetah: { name: 'Cheetah', emoji: '🐆' },
+  rhino: { name: 'Rhino', emoji: '🦏' },
+  octopus: { name: 'Octopus', emoji: '🐙' },
+  dolphin: { name: 'Dolphin', emoji: '🐬' },
+  turtle: { name: 'Turtle', emoji: '🐢' },
+  penguin: { name: 'Penguin', emoji: '🐧' },
+  flamingo: { name: 'Flamingo', emoji: '🦩' },
 };
 
 const FightTimeline: React.FC<FightTimelineProps> = ({ fights, loading, onViewFight }) => {
@@ -107,6 +122,12 @@ const FightTimeline: React.FC<FightTimelineProps> = ({ fights, loading, onViewFi
                         <Badge className={getStatusColor(fight.status)}>
                           {fight.status.replace('-', ' ')}
                         </Badge>
+                        {fight.status === 'pending' && (
+                          <Badge className="bg-blue-100 text-blue-800">
+                            <Gavel className="w-3 h-3 mr-1" />
+                            Needs Mediator
+                          </Badge>
+                        )}
                         {onViewFight && (
                           <Button 
                             size="sm" 
@@ -137,9 +158,22 @@ const FightTimeline: React.FC<FightTimelineProps> = ({ fights, loading, onViewFi
                         
                         <div className="text-right">
                           <p className="text-sm text-gray-500">{timeAgo}</p>
-                          {fight.mediator_profile && (
-                            <p className="text-xs text-blue-600 font-medium">
-                              Mediator: {fight.mediator_profile.username || fight.mediator_profile.email}
+                          {fight.mediator_profile ? (
+                            <div className="flex items-center space-x-1">
+                              <Avatar className="w-4 h-4">
+                                <AvatarImage 
+                                  src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=50&h=50&fit=crop&crop=face" 
+                                  alt="Trump" 
+                                />
+                                <AvatarFallback className="bg-blue-600 text-white text-xs">🦅</AvatarFallback>
+                              </Avatar>
+                              <p className="text-xs text-blue-600 font-medium">
+                                Trump: {fight.mediator_profile.username || fight.mediator_profile.email}
+                              </p>
+                            </div>
+                          ) : fight.status === 'pending' && (
+                            <p className="text-xs text-amber-600 font-medium">
+                              🔔 Seeking Trump Mediator
                             </p>
                           )}
                         </div>

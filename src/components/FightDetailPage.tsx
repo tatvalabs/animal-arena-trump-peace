@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,12 +16,13 @@ import {
   MessageSquare,
   Bell,
   Star,
-  Gavel
+  Gavel,
 } from 'lucide-react';
 import { useFights } from '@/hooks/useFights';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface FightDetailPageProps {
   fightId: string;
@@ -38,6 +38,18 @@ const animals = {
   elephant: { name: 'Elephant', emoji: '🐘' },
   wolf: { name: 'Wolf', emoji: '🐺' },
   eagle: { name: 'Eagle', emoji: '🦅' },
+  tiger: { name: 'Tiger', emoji: '🐅' },
+  shark: { name: 'Shark', emoji: '🦈' },
+  dragon: { name: 'Dragon', emoji: '🐉' },
+  snake: { name: 'Snake', emoji: '🐍' },
+  gorilla: { name: 'Gorilla', emoji: '🦍' },
+  cheetah: { name: 'Cheetah', emoji: '🐆' },
+  rhino: { name: 'Rhino', emoji: '🦏' },
+  octopus: { name: 'Octopus', emoji: '🐙' },
+  dolphin: { name: 'Dolphin', emoji: '🐬' },
+  turtle: { name: 'Turtle', emoji: '🐢' },
+  penguin: { name: 'Penguin', emoji: '🐧' },
+  flamingo: { name: 'Flamingo', emoji: '🦩' },
 };
 
 const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) => {
@@ -300,6 +312,13 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
             {canMediate && (
               <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
                 <h3 className="font-bold text-blue-900 mb-3 flex items-center">
+                  <Avatar className="w-6 h-6 mr-2">
+                    <AvatarImage 
+                      src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=100&h=100&fit=crop&crop=face" 
+                      alt="Trump Mediator" 
+                    />
+                    <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">🦅</AvatarFallback>
+                  </Avatar>
                   <Gavel className="w-5 h-5 mr-2" />
                   Trump Mediation Center
                 </h3>

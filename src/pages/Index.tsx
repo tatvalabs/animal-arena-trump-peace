@@ -140,7 +140,10 @@ const Index = () => {
         {currentView === 'timeline' && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-gray-800">All Fights Timeline</h2>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-800">All Fights Timeline</h2>
+                <p className="text-gray-600 mt-1">Volunteer as Trump mediator for pending conflicts</p>
+              </div>
               <Button 
                 onClick={() => setCurrentView('fights')}
                 variant="outline"
@@ -148,7 +151,31 @@ const Index = () => {
                 Back to My Fights
               </Button>
             </div>
-            <FightTimeline fights={fights} loading={fightsLoading} onViewFight={handleViewFight} />
+            
+            <div className="space-y-6">
+              {fightsLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">Loading fights...</p>
+                </div>
+              ) : fights.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No fights yet</h3>
+                  <p className="text-gray-500">The timeline will show all fights as they are created</p>
+                </div>
+              ) : (
+                fights
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((fight) => (
+                    <FightCard 
+                      key={fight.id} 
+                      fight={fight} 
+                      onViewFight={handleViewFight}
+                      showMediatorProposal={true}
+                    />
+                  ))
+              )}
+            </div>
           </div>
         )}
         
