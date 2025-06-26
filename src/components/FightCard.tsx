@@ -94,13 +94,6 @@ const FightCard: React.FC<FightCardProps> = ({
     }
   };
 
-  const handleMediatorProposal = async (fightId: string, proposal: string) => {
-    // This would typically send a proposal to both fighters
-    // For now, we'll simulate the approval process
-    console.log('Mediator proposal:', { fightId, proposal });
-    // In a real app, this would create a mediator_proposals table
-  };
-
   const handleViewFight = () => {
     if (onViewFight) {
       onViewFight(fight.id);
@@ -200,7 +193,6 @@ const FightCard: React.FC<FightCardProps> = ({
         <MediatorProposal
           fightId={fight.id}
           fightTitle={fight.title}
-          onPropose={handleMediatorProposal}
           canPropose={canPropose}
         />
       )}
