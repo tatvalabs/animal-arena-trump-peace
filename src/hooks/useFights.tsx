@@ -9,7 +9,6 @@ interface Fight {
   description: string;
   creator_id: string;
   opponent_email: string | null;
-  opponent_user_id: string | null;
   creator_animal: string;
   opponent_animal: string | null;
   status: string;
@@ -20,10 +19,6 @@ interface Fight {
   created_at: string;
   updated_at: string;
   profiles?: {
-    username: string | null;
-    email: string | null;
-  };
-  opponent_profile?: {
     username: string | null;
     email: string | null;
   };
@@ -56,7 +51,6 @@ export const useFights = () => {
         .select(`
           *,
           profiles!creator_id(username, email),
-          opponent_profile:profiles!opponent_user_id(username, email),
           mediator_profile:profiles!mediator_id(username, email)
         `)
         .order('created_at', { ascending: false });
@@ -66,12 +60,26 @@ export const useFights = () => {
         setFights([]);
       } else {
         console.log('Fetched fights:', data);
-        // Ensure we handle the data properly
+        // Map the data to ensure it matches our Fight interface
         const fightsData = data?.map(fight => ({
-          ...fight,
-          opponent_user_id: fight.opponent_user_id || null,
+          id: fight.id,
+          title: fight.title,
+          description: fight.description,
+          creator_id: fight.creator_id,
+          opponent_email: fight.opponent_email,
+          creator_animal: fight.creator_animal,
+          opponent_animal: fight.opponent_animal,
+          status: fight.status,
+          mediator_id: fight.mediator_id,
+          resolution: fight.resolution,
+          opponent_accepted: fight.opponent_accepted,
+          opponent_accepted_at: fight.opponent_accepted_at,
+          created_at: fight.created_at,
+          updated_at: fight.updated_at,
+          profiles: fight.profiles,
+          mediator_profile: fight.mediator_profile
         })) || [];
-        setFights(fightsData as Fight[]);
+        setFights(fightsData);
       }
     } catch (error) {
       console.error('Unexpected error fetching fights:', error);
@@ -132,7 +140,6 @@ export const useFights = () => {
         .update({ 
           opponent_accepted: true,
           opponent_animal: opponentAnimal,
-          opponent_user_id: user.id,
           status: 'accepted',
           opponent_accepted_at: new Date().toISOString()
         })
