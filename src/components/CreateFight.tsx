@@ -43,7 +43,8 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
     setLoading(true);
     
     try {
-      const { error } = await createFight(formData);
+      console.log('Submitting fight creation with data:', formData);
+      const { data, error } = await createFight(formData);
       
       if (error) {
         console.error('Fight creation error:', error);
@@ -53,6 +54,7 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
           variant: "destructive"
         });
       } else {
+        console.log('Fight created successfully:', data);
         toast({
           title: "Fight Created! ⚔️",
           description: "Your conflict has been registered. Prepare for battle!",
@@ -66,6 +68,7 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
           creator_animal: ''
         });
         
+        // Navigate back to fights view
         onFightCreated();
       }
     } catch (error) {
@@ -75,9 +78,9 @@ const CreateFight: React.FC<CreateFightProps> = ({ onFightCreated }) => {
         description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (

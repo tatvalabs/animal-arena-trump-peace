@@ -48,26 +48,37 @@ export const useFights = () => {
     if (!user) return;
 
     console.log('Fetching fights for user:', user.id);
+    setLoading(true);
 
-    const { data, error } = await supabase
-      .from('fights')
-      .select(`
-        *,
-        profiles!creator_id(username, email),
-        opponent_profile:profiles!opponent_user_id(username, email),
-        mediator_profile:profiles!mediator_id(username, email)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('fights')
+        .select(`
+          *,
+          profiles!creator_id(username, email),
+          opponent_profile:profiles!opponent_user_id(username, email),
+          mediator_profile:profiles!mediator_id(username, email)
+        `)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching fights:', error);
+      if (error) {
+        console.error('Error fetching fights:', error);
+        setFights([]);
+      } else {
+        console.log('Fetched fights:', data);
+        // Ensure we handle the data properly
+        const fightsData = data?.map(fight => ({
+          ...fight,
+          opponent_user_id: fight.opponent_user_id || null,
+        })) || [];
+        setFights(fightsData as Fight[]);
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching fights:', error);
       setFights([]);
-    } else {
-      console.log('Fetched fights:', data);
-      // Type assertion to handle the Supabase response structure
-      setFights((data as any[]) || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const createFight = async (fightData: {
@@ -81,22 +92,33 @@ export const useFights = () => {
     console.log('Creating fight with data:', fightData);
     console.log('User ID:', user.id);
 
-    const { data, error } = await supabase
-      .from('fights')
-      .insert([{
-        ...fightData,
-        creator_id: user.id
-      }])
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('fights')
+        .insert([{
+          ...fightData,
+          creator_id: user.id,
+          status: 'pending',
+          opponent_accepted: false
+        }])
+        .select()
+        .single();
 
-    console.log('Fight creation result:', { data, error });
+      console.log('Fight creation result:', { data, error });
 
-    if (!error) {
+      if (error) {
+        console.error('Fight creation error:', error);
+        return { data: null, error };
+      }
+
+      // Immediately refetch fights to update the UI
       await fetchFights();
+      
+      return { data, error: null };
+    } catch (error) {
+      console.error('Unexpected error creating fight:', error);
+      return { data: null, error: error as Error };
     }
-
-    return { data, error };
   };
 
   const acceptFightInvitation = async (fightId: string, opponentAnimal: string) => {
@@ -104,20 +126,23 @@ export const useFights = () => {
 
     console.log('Accepting fight invitation:', fightId, opponentAnimal);
 
-    const { error } = await supabase
-      .from('fights')
-      .update({ 
-        opponent_accepted: true,
-        opponent_animal: opponentAnimal,
-        opponent_user_id: user.id,
-        status: 'accepted',
-        opponent_accepted_at: new Date().toISOString()
-      })
-      .eq('id', fightId);
+    try {
+      const { error } = await supabase
+        .from('fights')
+        .update({ 
+          opponent_accepted: true,
+          opponent_animal: opponentAnimal,
+          opponent_user_id: user.id,
+          status: 'accepted',
+          opponent_accepted_at: new Date().toISOString()
+        })
+        .eq('id', fightId);
 
-    if (!error) {
-      await fetchFights();
-      
+      if (error) {
+        console.error('Fight acceptance error:', error);
+        return { error };
+      }
+
       // Create activity record
       await supabase
         .from('fight_activities')
@@ -127,46 +152,65 @@ export const useFights = () => {
           activity_type: 'fight_accepted',
           message: `💪 Accepted fight invitation as ${opponentAnimal}! The battle begins! ⚔️`
         }]);
-    }
 
-    console.log('Fight acceptance result:', { error });
-    return { error };
+      // Refetch fights
+      await fetchFights();
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Unexpected error accepting fight:', error);
+      return { error: error as Error };
+    }
   };
 
   const takeFight = async (fightId: string) => {
     if (!user) return { error: new Error('No user') };
 
-    const { error } = await supabase
-      .from('fights')
-      .update({ 
-        mediator_id: user.id,
-        status: 'in-progress'
-      })
-      .eq('id', fightId);
+    try {
+      const { error } = await supabase
+        .from('fights')
+        .update({ 
+          mediator_id: user.id,
+          status: 'in-progress'
+        })
+        .eq('id', fightId);
 
-    if (!error) {
+      if (error) {
+        console.error('Take fight error:', error);
+        return { error };
+      }
+
       await fetchFights();
+      return { error: null };
+    } catch (error) {
+      console.error('Unexpected error taking fight:', error);
+      return { error: error as Error };
     }
-
-    return { error };
   };
 
   const resolveFight = async (fightId: string, resolution: string) => {
     if (!user) return { error: new Error('No user') };
 
-    const { error } = await supabase
-      .from('fights')
-      .update({ 
-        resolution,
-        status: 'resolved'
-      })
-      .eq('id', fightId);
+    try {
+      const { error } = await supabase
+        .from('fights')
+        .update({ 
+          resolution,
+          status: 'resolved'
+        })
+        .eq('id', fightId);
 
-    if (!error) {
+      if (error) {
+        console.error('Resolve fight error:', error);
+        return { error };
+      }
+
       await fetchFights();
+      return { error: null };
+    } catch (error) {
+      console.error('Unexpected error resolving fight:', error);
+      return { error: error as Error };
     }
-
-    return { error };
   };
 
   return {
