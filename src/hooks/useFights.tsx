@@ -9,6 +9,7 @@ interface Fight {
   description: string;
   creator_id: string;
   opponent_email: string | null;
+  opponent_user_id: string | null;
   creator_animal: string;
   opponent_animal: string | null;
   status: string;
@@ -19,6 +20,10 @@ interface Fight {
   created_at: string;
   updated_at: string;
   profiles?: {
+    username: string | null;
+    email: string | null;
+  };
+  opponent_profile?: {
     username: string | null;
     email: string | null;
   };
@@ -44,12 +49,12 @@ export const useFights = () => {
 
     console.log('Fetching fights for user:', user.id);
 
-    // Fetch all fights for timeline and browsing
     const { data, error } = await supabase
       .from('fights')
       .select(`
         *,
         profiles!creator_id(username, email),
+        opponent_profile:profiles!opponent_user_id(username, email),
         mediator_profile:profiles!mediator_id(username, email)
       `)
       .order('created_at', { ascending: false });
@@ -96,12 +101,16 @@ export const useFights = () => {
   const acceptFightInvitation = async (fightId: string, opponentAnimal: string) => {
     if (!user) return { error: new Error('No user') };
 
+    console.log('Accepting fight invitation:', fightId, opponentAnimal);
+
     const { error } = await supabase
       .from('fights')
       .update({ 
         opponent_accepted: true,
         opponent_animal: opponentAnimal,
-        status: 'accepted'
+        opponent_user_id: user.id,
+        status: 'accepted',
+        opponent_accepted_at: new Date().toISOString()
       })
       .eq('id', fightId);
 
@@ -115,10 +124,11 @@ export const useFights = () => {
           fight_id: fightId,
           user_id: user.id,
           activity_type: 'fight_accepted',
-          message: `Accepted fight invitation as ${opponentAnimal}`
+          message: `💪 Accepted fight invitation as ${opponentAnimal}! The battle begins! ⚔️`
         }]);
     }
 
+    console.log('Fight acceptance result:', { error });
     return { error };
   };
 

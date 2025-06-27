@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CreateFight from '@/components/CreateFight';
@@ -17,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useFights } from '@/hooks/useFights';
 import { useMediatorRequests } from '@/hooks/useMediatorRequests';
+import MediatorRequestCard from '@/components/MediatorRequestCard';
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -68,14 +68,14 @@ const Index = () => {
     !f.opponent_accepted
   );
   
-  // Fights needing user action
-  const pendingMediatorRequests = requests.filter(r => 
-    r.status === 'pending' && 
-    r.fights?.creator_id === user.id
+  // Mediator requests that need user action
+  const myMediatorRequests = requests.filter(r => 
+    (r.fights?.creator_id === user.id || r.fights?.opponent_user_id === user.id) &&
+    r.status === 'pending'
   );
   
   // Count of actions needed
-  const actionsNeeded = fightInvites.length + pendingMediatorRequests.length;
+  const actionsNeeded = fightInvites.length + myMediatorRequests.length;
 
   if (currentView === 'fight-detail' && selectedFightId) {
     return (
@@ -157,7 +157,7 @@ const Index = () => {
               </div>
             ) : (
               <Tabs defaultValue="my-fights" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="my-fights" className="flex items-center space-x-2">
                     <Shield className="w-4 h-4" />
                     <span>My Fights ({myFights.length})</span>
@@ -169,10 +169,17 @@ const Index = () => {
                       <Badge className="bg-orange-100 text-orange-800 ml-1">New</Badge>
                     )}
                   </TabsTrigger>
+                  <TabsTrigger value="mediator-requests" className="flex items-center space-x-2">
+                    <Gavel className="w-4 h-4" />
+                    <span>Mediator Requests ({myMediatorRequests.length})</span>
+                    {myMediatorRequests.length > 0 && (
+                      <Badge className="bg-blue-100 text-blue-800 ml-1">!</Badge>
+                    )}
+                  </TabsTrigger>
                   <TabsTrigger value="actions" className="flex items-center space-x-2">
                     <AlertCircle className="w-4 h-4" />
-                    <span>Action Required ({pendingMediatorRequests.length})</span>
-                    {pendingMediatorRequests.length > 0 && (
+                    <span>Actions ({actionsNeeded})</span>
+                    {actionsNeeded > 0 && (
                       <Badge className="bg-red-100 text-red-800 ml-1">!</Badge>
                     )}
                   </TabsTrigger>
@@ -229,6 +236,33 @@ const Index = () => {
                             fight={fight} 
                             onViewFight={handleViewFight}
                           />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="mediator-requests" className="space-y-4">
+                  {myMediatorRequests.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Gavel className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">No mediator requests</h3>
+                      <p className="text-gray-500">No mediation requests for your fights yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center">
+                          <Gavel className="w-5 h-5 text-blue-600 mr-2" />
+                          <h3 className="font-semibold text-blue-800">Mediator Requests</h3>
+                        </div>
+                        <p className="text-sm text-blue-700 mt-1">
+                          Proposed mediators for your fights. Both players must accept for mediation to begin.
+                        </p>
+                      </div>
+                      <div className="grid gap-4">
+                        {myMediatorRequests.map((request) => (
+                          <MediatorRequestCard key={request.id} request={request} />
                         ))}
                       </div>
                     </div>

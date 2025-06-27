@@ -19,6 +19,7 @@ interface MediatorRequest {
   fights?: {
     title: string;
     creator_id: string;
+    opponent_user_id: string | null;
     opponent_email: string | null;
   };
   profiles?: {
@@ -45,7 +46,7 @@ export const useMediatorRequests = () => {
       .from('mediator_requests')
       .select(`
         *,
-        fights(title, creator_id, opponent_email),
+        fights(title, creator_id, opponent_user_id, opponent_email),
         profiles(username, email)
       `)
       .order('created_at', { ascending: false });
@@ -81,29 +82,11 @@ export const useMediatorRequests = () => {
           fight_id: fightId,
           user_id: user.id,
           activity_type: 'mediation_request',
-          message: `Proposed mediation: ${proposalMessage}`
+          message: `🦅 Proposed mediation: ${proposalMessage}`
         }]);
     }
 
     return { data, error };
-  };
-
-  const respondToRequest = async (requestId: string, response: 'approved' | 'rejected') => {
-    if (!user) return { error: new Error('No user') };
-
-    const { error } = await supabase
-      .from('mediator_requests')
-      .update({ 
-        status: response,
-        creator_response: response
-      })
-      .eq('id', requestId);
-
-    if (!error) {
-      await fetchRequests();
-    }
-
-    return { error };
   };
 
   const acceptMediatorRequest = async (requestId: string, isCreator: boolean) => {
@@ -116,6 +99,42 @@ export const useMediatorRequests = () => {
     const { error } = await supabase
       .from('mediator_requests')
       .update(updateData)
+      .eq('id', requestId);
+
+    if (!error) {
+      await fetchRequests();
+      
+      // Get the request details for activity logging
+      const { data: requestData } = await supabase
+        .from('mediator_requests')
+        .select('fight_id')
+        .eq('id', requestId)
+        .single();
+
+      if (requestData) {
+        await supabase
+          .from('fight_activities')
+          .insert([{
+            fight_id: requestData.fight_id,
+            user_id: user.id,
+            activity_type: isCreator ? 'mediator_accepted_by_creator' : 'mediator_accepted_by_opponent',
+            message: `✅ ${isCreator ? 'Creator' : 'Opponent'} accepted mediator proposal`
+          }]);
+      }
+    }
+
+    return { error };
+  };
+
+  const respondToRequest = async (requestId: string, response: 'approved' | 'rejected') => {
+    if (!user) return { error: new Error('No user') };
+
+    const { error } = await supabase
+      .from('mediator_requests')
+      .update({ 
+        status: response,
+        creator_response: response
+      })
       .eq('id', requestId);
 
     if (!error) {

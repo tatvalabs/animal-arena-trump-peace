@@ -25,6 +25,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import ModerationPanel from './ModerationPanel';
 
 interface FightDetailPageProps {
   fightId: string;
@@ -60,6 +62,50 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   const { profile } = useProfile();
   const { toast } = useToast();
   
+  const [isWatching, setIsWatching] = useState(false);
+  const [spectatorCount, setSpectatorCount] = useState(Math.floor(Math.random() * 50) + 10);
+  const [fightActivities, setFightActivities] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+
+  const fight = fights.find(f => f.id === fightId);
+  const userRole = profile?.role || 'fighter';
+  const isTrump = userRole === 'trump';
+  const isCreator = fight?.creator_id === user?.id;
+  const isOpponent = fight?.opponent_user_id === user?.id;
+  const isMediator = fight?.mediator_id === user?.id;
+  const canMediate = isMediator && (fight?.status === 'in-progress' || fight?.status === 'accepted');
+
+  useEffect(() => {
+    if (fightId) {
+      fetchFightActivities();
+    }
+    
+    // Simulate real-time updates
+    const interval = setInterval(() => {
+      setSpectatorCount(prev => prev + Math.floor(Math.random() * 3) - 1);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [fightId]);
+
+  const fetchFightActivities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fight_activities')
+        .select(`
+          *,
+          profiles(username, email)
+        `)
+        .eq('fight_id', fightId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setFightActivities(data || []);
+    } catch (error) {
+      console.error('Error fetching fight activities:', error);
+    }
+  };
+
   const [isWatching, setIsWatching] = useState(false);
   const [spectatorCount, setSpectatorCount] = useState(Math.floor(Math.random() * 50) + 10);
   const [mediationComments, setMediationComments] = useState<any[]>([]);
@@ -200,24 +246,31 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
     }
   };
 
-  const addComment = () => {
-    if (!newComment.trim()) return;
+  const addComment = async () => {
+    if (!newComment.trim() || !user) return;
     
-    const comment = {
-      id: Date.now(),
-      user: profile?.username || 'Anonymous',
-      text: newComment,
-      timestamp: new Date().toLocaleTimeString(),
-      type: 'spectator'
-    };
-    
-    setMediationComments([...mediationComments, comment]);
-    setNewComment('');
-    
-    toast({
-      title: "Comment added! 💬",
-      description: "Your observation has been shared with other spectators."
-    });
+    try {
+      const { error } = await supabase
+        .from('fight_activities')
+        .insert([{
+          fight_id: fightId,
+          user_id: user.id,
+          activity_type: 'comment',
+          message: `💬 ${newComment}`
+        }]);
+
+      if (error) throw error;
+
+      setNewComment('');
+      await fetchFightActivities();
+      
+      toast({
+        title: "Comment added! 💬",
+        description: "Your observation has been shared with other spectators."
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
   };
 
   if (!fight) {
@@ -231,6 +284,7 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   }
 
   const creatorAnimal = animals[fight.creator_animal as keyof typeof animals];
+  const opponentAnimal = fight.opponent_animal ? animals[fight.opponent_animal as keyof typeof animals] : null;
   const timeAgo = new Date(fight.created_at).toLocaleDateString();
 
   return (
@@ -272,11 +326,13 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
             <CardTitle className="text-2xl text-amber-900">{fight.title}</CardTitle>
             <Badge className={`${
               fight.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-              fight.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+              fight.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+              fight.status === 'in-progress' ? 'bg-purple-100 text-purple-800' :
               'bg-green-100 text-green-800'
             } px-3 py-1 text-lg`}>
-              {fight.status === 'in-progress' ? '⚔️ Battle in Progress' : 
-               fight.status === 'resolved' ? '🏆 Resolved' : '⏳ Awaiting Mediator'}
+              {fight.status === 'accepted' ? '🥊 Ready to Fight' :
+               fight.status === 'in-progress' ? '⚔️ Battle in Progress' : 
+               fight.status === 'resolved' ? '🏆 Resolved' : '⏳ Awaiting Opponent'}
             </Badge>
           </div>
         </CardHeader>
@@ -322,102 +378,59 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
               
               <div className="text-center">
                 <div className="text-3xl font-bold text-amber-600">VS</div>
-                <div className="text-xs text-gray-500">Conflict Zone</div>
+                <div className="text-xs text-gray-500">
+                  {fight.status === 'accepted' || fight.status === 'in-progress' ? 'Fighting!' : 'Conflict Zone'}
+                </div>
               </div>
               
               <div className="flex items-center space-x-3">
                 <div className="text-right">
-                  <p className="font-bold text-lg">Seeking Opponent</p>
-                  <p className="text-sm text-gray-600">Open Challenge</p>
+                  <p className="font-bold text-lg">
+                    {opponentAnimal ? opponentAnimal.name : 'Seeking Opponent'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {fight.opponent_profile?.username || fight.opponent_profile?.email || 'Open Challenge'}
+                  </p>
                 </div>
-                <span className="text-4xl">❓</span>
+                <span className="text-4xl">{opponentAnimal?.emoji || '❓'}</span>
               </div>
             </div>
           </div>
 
-          {/* Mediation Section */}
-          {fight.status === 'resolved' && fight.resolution && (
-            <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-              <h3 className="font-bold text-green-900 mb-2 flex items-center">
-                <Star className="w-5 h-5 mr-2" />
-                Resolution
-              </h3>
-              <p className="text-green-800">{fight.resolution}</p>
-              {fight.mediator_profile && (
-                <p className="text-sm text-green-600 mt-2">
-                  Resolved by: {fight.mediator_profile.username || fight.mediator_profile.email}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Trump Actions */}
+          {/* Moderation Panel for Trump mediators */}
           {canMediate && (
-            <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-              <h3 className="font-bold text-blue-900 mb-3 flex items-center">
-                <Avatar className="w-6 h-6 mr-2">
-                  <AvatarImage 
-                    src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=100&h=100&fit=crop&crop=face" 
-                    alt="Trump Mediator" 
-                  />
-                  <AvatarFallback className="bg-blue-600 text-white font-bold text-xs">🦅</AvatarFallback>
-                </Avatar>
-                <Gavel className="w-5 h-5 mr-2" />
-                Trump Mediation Center
-              </h3>
-              <div className="space-y-3">
-                {fight.mediator_id !== user?.id ? (
-                  <Button 
-                    onClick={handleTakeFight}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
-                  >
-                    🦅 Take Control of This Conflict
-                  </Button>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-blue-800 font-medium">You are mediating this conflict!</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {mediationOptions.map((option) => (
-                        <Dialog key={option.id}>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={`${option.color} border-2 p-4 h-auto flex-col space-y-2`}
-                              onClick={() => {
-                                setSelectedMediationType(option.id);
-                                setShowMediationDialog(true);
-                              }}
-                            >
-                              <div className="text-2xl">{option.emoji}</div>
-                              <div className="font-semibold">{option.label}</div>
-                              <div className="text-xs text-center">{option.description}</div>
-                            </Button>
-                          </DialogTrigger>
-                        </Dialog>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="mt-6">
+              <ModerationPanel 
+                fightId={fightId} 
+                onModerationAction={fetchFightActivities}
+              />
             </div>
           )}
 
-          {/* Spectator Comments */}
-          <div className="bg-gray-50 p-4 rounded-lg border">
+          {/* Fight Activities Timeline */}
+          <div className="bg-gray-50 p-4 rounded-lg border mt-6">
             <h3 className="font-bold text-gray-900 mb-3 flex items-center">
               <MessageSquare className="w-5 h-5 mr-2" />
-              Spectator Commentary ({spectatorCount} watching)
+              Fight Timeline & Comments ({spectatorCount} watching)
             </h3>
             
-            <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
-              {mediationComments.length === 0 ? (
-                <p className="text-gray-500 text-sm italic">No comments yet. Be the first to share your thoughts!</p>
+            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+              {fightActivities.length === 0 ? (
+                <p className="text-gray-500 text-sm italic">No activity yet. Be the first to comment!</p>
               ) : (
-                mediationComments.map((comment) => (
-                  <div key={comment.id} className="bg-white p-2 rounded text-sm">
-                    <span className="font-medium text-blue-600">{comment.user}</span>
-                    <span className="text-gray-500 text-xs ml-2">{comment.timestamp}</span>
-                    <p className="text-gray-700 mt-1">{comment.text}</p>
+                fightActivities.map((activity) => (
+                  <div key={activity.id} className="bg-white p-3 rounded border">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="font-medium text-blue-600">
+                          {activity.profiles?.username || activity.profiles?.email || 'Anonymous'}
+                        </span>
+                        <p className="text-gray-700 mt-1">{activity.message}</p>
+                      </div>
+                      <span className="text-gray-500 text-xs">
+                        {new Date(activity.created_at).toLocaleTimeString()}
+                      </span>
+                    </div>
                   </div>
                 ))
               )}
@@ -425,14 +438,14 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
             
             <div className="flex space-x-2">
               <Textarea
-                placeholder="Share your thoughts on this conflict..."
+                placeholder="Share your thoughts, add emojis! 🔥💪⚔️🎯"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1"
                 rows={2}
               />
               <Button onClick={addComment} disabled={!newComment.trim()}>
-                Post
+                Post 💬
               </Button>
             </div>
           </div>
