@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -146,9 +145,8 @@ const FightInviteCard: React.FC<FightInviteCardProps> = ({
               </div>
               <div className="space-y-3">
                 <AnimalSelect
-                  value={selectedAnimal}
-                  onValueChange={setSelectedAnimal}
-                  placeholder="Choose your fighting animal"
+                  selectedAnimal={selectedAnimal}
+                  onAnimalSelect={setSelectedAnimal}
                 />
                 <div className="flex space-x-2">
                   <Button 
