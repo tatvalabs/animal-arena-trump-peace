@@ -59,6 +59,8 @@ export type Database = {
           description: string
           id: string
           mediator_id: string | null
+          opponent_accepted: boolean | null
+          opponent_accepted_at: string | null
           opponent_animal: string | null
           opponent_email: string | null
           resolution: string | null
@@ -73,6 +75,8 @@ export type Database = {
           description: string
           id?: string
           mediator_id?: string | null
+          opponent_accepted?: boolean | null
+          opponent_accepted_at?: string | null
           opponent_animal?: string | null
           opponent_email?: string | null
           resolution?: string | null
@@ -87,6 +91,8 @@ export type Database = {
           description?: string
           id?: string
           mediator_id?: string | null
+          opponent_accepted?: boolean | null
+          opponent_accepted_at?: string | null
           opponent_animal?: string | null
           opponent_email?: string | null
           resolution?: string | null
@@ -113,6 +119,9 @@ export type Database = {
       }
       mediator_requests: {
         Row: {
+          accepted_at: string | null
+          accepted_by_creator: boolean | null
+          accepted_by_opponent: boolean | null
           created_at: string | null
           creator_response: string | null
           fight_id: string
@@ -124,6 +133,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_by_creator?: boolean | null
+          accepted_by_opponent?: boolean | null
           created_at?: string | null
           creator_response?: string | null
           fight_id: string
@@ -135,6 +147,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          accepted_at?: string | null
+          accepted_by_creator?: boolean | null
+          accepted_by_opponent?: boolean | null
           created_at?: string | null
           creator_response?: string | null
           fight_id?: string

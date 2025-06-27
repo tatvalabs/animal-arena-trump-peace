@@ -14,6 +14,8 @@ interface Fight {
   status: string;
   mediator_id: string | null;
   resolution: string | null;
+  opponent_accepted: boolean | null;
+  opponent_accepted_at: string | null;
   created_at: string;
   updated_at: string;
   profiles?: {
@@ -91,6 +93,35 @@ export const useFights = () => {
     return { data, error };
   };
 
+  const acceptFightInvitation = async (fightId: string, opponentAnimal: string) => {
+    if (!user) return { error: new Error('No user') };
+
+    const { error } = await supabase
+      .from('fights')
+      .update({ 
+        opponent_accepted: true,
+        opponent_animal: opponentAnimal,
+        status: 'accepted'
+      })
+      .eq('id', fightId);
+
+    if (!error) {
+      await fetchFights();
+      
+      // Create activity record
+      await supabase
+        .from('fight_activities')
+        .insert([{
+          fight_id: fightId,
+          user_id: user.id,
+          activity_type: 'fight_accepted',
+          message: `Accepted fight invitation as ${opponentAnimal}`
+        }]);
+    }
+
+    return { error };
+  };
+
   const takeFight = async (fightId: string) => {
     if (!user) return { error: new Error('No user') };
 
@@ -131,6 +162,7 @@ export const useFights = () => {
     fights,
     loading,
     createFight,
+    acceptFightInvitation,
     takeFight,
     resolveFight,
     refetch: fetchFights

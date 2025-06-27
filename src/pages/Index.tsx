@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CreateFight from '@/components/CreateFight';
 import FightCard from '@/components/FightCard';
+import FightInviteCard from '@/components/FightInviteCard';
 import FightTimeline from '@/components/FightTimeline';
 import FightDetailPage from '@/components/FightDetailPage';
 import AuthPage from '@/components/AuthPage';
@@ -59,18 +61,20 @@ const Index = () => {
   const myMediatedFights = fights.filter(f => f.mediator_id === user.id);
   const resolvedFights = fights.filter(f => f.status === 'resolved');
   
-  // New: Fight invites (fights where user is invited as opponent via email)
+  // Fight invites (fights where user is invited as opponent via email)
   const fightInvites = fights.filter(f => 
-    f.opponent_email === user.email && f.creator_id !== user.id
+    f.opponent_email === user.email && 
+    f.creator_id !== user.id && 
+    !f.opponent_accepted
   );
   
-  // New: Fights needing user action
+  // Fights needing user action
   const pendingMediatorRequests = requests.filter(r => 
     r.status === 'pending' && 
     r.fights?.creator_id === user.id
   );
   
-  // New: Count of actions needed
+  // Count of actions needed
   const actionsNeeded = fightInvites.length + pendingMediatorRequests.length;
 
   if (currentView === 'fight-detail' && selectedFightId) {
@@ -220,15 +224,11 @@ const Index = () => {
                       </div>
                       <div className="grid gap-6">
                         {fightInvites.map((fight) => (
-                          <div key={fight.id} className="relative">
-                            <Badge className="absolute -top-2 -right-2 bg-orange-100 text-orange-800 z-10">
-                              Invitation
-                            </Badge>
-                            <FightCard 
-                              fight={fight} 
-                              onViewFight={handleViewFight}
-                            />
-                          </div>
+                          <FightInviteCard 
+                            key={fight.id}
+                            fight={fight} 
+                            onViewFight={handleViewFight}
+                          />
                         ))}
                       </div>
                     </div>

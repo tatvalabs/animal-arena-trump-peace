@@ -11,11 +11,15 @@ interface MediatorRequest {
   status: string;
   creator_response: string | null;
   opponent_response: string | null;
+  accepted_by_creator: boolean | null;
+  accepted_by_opponent: boolean | null;
+  accepted_at: string | null;
   created_at: string;
   updated_at: string;
   fights?: {
     title: string;
     creator_id: string;
+    opponent_email: string | null;
   };
   profiles?: {
     username: string | null;
@@ -41,7 +45,7 @@ export const useMediatorRequests = () => {
       .from('mediator_requests')
       .select(`
         *,
-        fights(title, creator_id),
+        fights(title, creator_id, opponent_email),
         profiles(username, email)
       `)
       .order('created_at', { ascending: false });
@@ -102,11 +106,31 @@ export const useMediatorRequests = () => {
     return { error };
   };
 
+  const acceptMediatorRequest = async (requestId: string, isCreator: boolean) => {
+    if (!user) return { error: new Error('No user') };
+
+    const updateData = isCreator 
+      ? { accepted_by_creator: true }
+      : { accepted_by_opponent: true };
+
+    const { error } = await supabase
+      .from('mediator_requests')
+      .update(updateData)
+      .eq('id', requestId);
+
+    if (!error) {
+      await fetchRequests();
+    }
+
+    return { error };
+  };
+
   return {
     requests,
     loading,
     createRequest,
     respondToRequest,
+    acceptMediatorRequest,
     refetch: fetchRequests
   };
 };
