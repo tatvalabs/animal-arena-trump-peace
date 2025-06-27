@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,9 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   const [spectatorCount, setSpectatorCount] = useState(Math.floor(Math.random() * 50) + 10);
   const [fightActivities, setFightActivities] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [selectedMediationType, setSelectedMediationType] = useState('');
+  const [mediationAmount, setMediationAmount] = useState('');
+  const [showMediationDialog, setShowMediationDialog] = useState(false);
 
   const fight = fights.find(f => f.id === fightId);
   const userRole = profile?.role || 'fighter';
@@ -105,31 +109,6 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
       console.error('Error fetching fight activities:', error);
     }
   };
-
-  const [isWatching, setIsWatching] = useState(false);
-  const [spectatorCount, setSpectatorCount] = useState(Math.floor(Math.random() * 50) + 10);
-  const [mediationComments, setMediationComments] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [selectedMediationType, setSelectedMediationType] = useState('');
-  const [mediationAmount, setMediationAmount] = useState('');
-  const [showMediationDialog, setShowMediationDialog] = useState(false);
-
-  const fight = fights.find(f => f.id === fightId);
-  const userRole = profile?.role || 'fighter';
-  const isTrump = userRole === 'trump';
-  const isCreator = fight?.creator_id === user?.id;
-  const isMediator = fight?.mediator_id === user?.id;
-  const canMediate = isMediator && fight?.status === 'in-progress';
-  const canResolve = (isCreator || isMediator) && fight?.status === 'in-progress';
-
-  useEffect(() => {
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setSpectatorCount(prev => prev + Math.floor(Math.random() * 3) - 1);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const mediationOptions = [
     {
@@ -340,7 +319,7 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
           <p className="text-gray-700 text-lg leading-relaxed mb-6">{fight.description}</p>
           
           {/* Action Buttons */}
-          {canResolve && (
+          {(isCreator || isMediator) && fight.status === 'in-progress' && (
             <div className="flex space-x-2 mb-6">
               <Button
                 onClick={handleResolve}

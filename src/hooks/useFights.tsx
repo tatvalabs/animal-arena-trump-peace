@@ -64,7 +64,8 @@ export const useFights = () => {
       setFights([]);
     } else {
       console.log('Fetched fights:', data);
-      setFights(data || []);
+      // Type assertion to handle the Supabase response structure
+      setFights((data as any[]) || []);
     }
     setLoading(false);
   };

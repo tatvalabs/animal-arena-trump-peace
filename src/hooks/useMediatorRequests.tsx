@@ -54,7 +54,8 @@ export const useMediatorRequests = () => {
     if (error) {
       console.error('Error fetching mediator requests:', error);
     } else {
-      setRequests(data || []);
+      // Type assertion to handle the Supabase response structure
+      setRequests((data as any[]) || []);
     }
     setLoading(false);
   };
