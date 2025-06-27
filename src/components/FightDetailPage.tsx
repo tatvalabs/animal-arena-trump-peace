@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,7 +74,6 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   const userRole = profile?.role || 'fighter';
   const isTrump = userRole === 'trump';
   const isCreator = fight?.creator_id === user?.id;
-  const isOpponent = fight?.opponent_user_id === user?.id;
   const isMediator = fight?.mediator_id === user?.id;
   const canMediate = isMediator && (fight?.status === 'in-progress' || fight?.status === 'accepted');
 
@@ -368,7 +366,7 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
                     {opponentAnimal ? opponentAnimal.name : 'Seeking Opponent'}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {fight.opponent_profile?.username || fight.opponent_profile?.email || 'Open Challenge'}
+                    {fight.opponent_email || 'Open Challenge'}
                   </p>
                 </div>
                 <span className="text-4xl">{opponentAnimal?.emoji || '❓'}</span>
