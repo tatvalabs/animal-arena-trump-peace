@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Shield, 
   Users, 
@@ -15,9 +15,9 @@ import {
   Eye,
   MessageSquare,
   Bell,
-  Star,
   Gavel,
   CheckCircle,
+  AlertCircle,
   XCircle
 } from 'lucide-react';
 import { useFights } from '@/hooks/useFights';
@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import ModerationPanel from './ModerationPanel';
+import AnimalSelect from './AnimalSelect';
 
 interface FightDetailPageProps {
   fightId: string;
@@ -57,7 +58,7 @@ const animals = {
 };
 
 const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) => {
-  const { fights, takeFight, resolveFight } = useFights();
+  const { fights, takeFight, resolveFight, acceptFightInvitation, refetch } = useFights();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
@@ -69,6 +70,8 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   const [selectedMediationType, setSelectedMediationType] = useState('');
   const [mediationAmount, setMediationAmount] = useState('');
   const [showMediationDialog, setShowMediationDialog] = useState(false);
+  const [selectedAnimal, setSelectedAnimal] = useState('');
+  const [isAccepting, setIsAccepting] = useState(false);
 
   const fight = fights.find(f => f.id === fightId);
   const userRole = profile?.role || 'fighter';
@@ -76,6 +79,10 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   const isCreator = fight?.creator_id === user?.id;
   const isMediator = fight?.mediator_id === user?.id;
   const canMediate = isMediator && (fight?.status === 'in-progress' || fight?.status === 'accepted');
+  
+  // Check if user is invited to this fight
+  const isInvited = fight?.opponent_email === user?.email && fight?.creator_id !== user?.id;
+  const canAcceptFight = isInvited && !fight?.opponent_accepted;
 
   useEffect(() => {
     if (fightId) {
@@ -142,6 +149,41 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
       color: 'bg-purple-100 text-purple-800 hover:bg-purple-200'
     }
   ];
+
+  const handleAcceptFight = async () => {
+    if (!selectedAnimal) {
+      toast({
+        title: "Choose Your Animal",
+        description: "Please select an animal before accepting the fight.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAccepting(true);
+    console.log('Accepting fight with animal:', selectedAnimal);
+    
+    const { error } = await acceptFightInvitation(fightId, selectedAnimal);
+    
+    if (error) {
+      console.error('Error accepting fight:', error);
+      toast({
+        title: "Error",
+        description: "Failed to accept fight invitation.",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "🥊 Fight Accepted!",
+        description: `You've joined the fight as ${animals[selectedAnimal as keyof typeof animals]?.name}!`,
+      });
+      // Force a refetch to update the UI immediately
+      setTimeout(() => {
+        refetch();
+      }, 1000);
+    }
+    setIsAccepting(false);
+  };
 
   const handleWatch = () => {
     setIsWatching(!isWatching);
@@ -295,6 +337,36 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
           )}
         </div>
       </div>
+
+      {/* Fight Acceptance Card for Invited Users */}
+      {canAcceptFight && (
+        <Card className="border-2 border-orange-300 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="text-xl text-orange-800 flex items-center">
+              <AlertCircle className="w-6 h-6 mr-2" />
+              You're Invited to This Fight!
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-orange-700">
+                You've been invited to participate in this conflict. Choose your animal and accept the fight to begin!
+              </p>
+              <AnimalSelect
+                selectedAnimal={selectedAnimal}
+                onAnimalSelect={setSelectedAnimal}
+              />
+              <Button 
+                onClick={handleAcceptFight}
+                disabled={!selectedAnimal || isAccepting}
+                className="bg-green-600 hover:bg-green-700 w-full"
+              >
+                {isAccepting ? 'Accepting Fight...' : '✊ Accept Fight Invitation'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Fight Details Card */}
       <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">

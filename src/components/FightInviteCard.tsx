@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +55,7 @@ const FightInviteCard: React.FC<FightInviteCardProps> = ({
   fight, 
   onViewFight 
 }) => {
-  const { acceptFightInvitation } = useFights();
+  const { acceptFightInvitation, refetch } = useFights();
   const { toast } = useToast();
   const [selectedAnimal, setSelectedAnimal] = useState('');
   const [isAccepting, setIsAccepting] = useState(false);
@@ -70,9 +71,12 @@ const FightInviteCard: React.FC<FightInviteCardProps> = ({
     }
 
     setIsAccepting(true);
+    console.log('Accepting fight with animal:', selectedAnimal);
+    
     const { error } = await acceptFightInvitation(fight.id, selectedAnimal);
     
     if (error) {
+      console.error('Error accepting fight:', error);
       toast({
         title: "Error",
         description: "Failed to accept fight invitation.",
@@ -83,6 +87,10 @@ const FightInviteCard: React.FC<FightInviteCardProps> = ({
         title: "🥊 Fight Accepted!",
         description: `You've joined the fight as ${animals[selectedAnimal as keyof typeof animals]?.name}!`,
       });
+      // Force a refetch to update the UI immediately
+      setTimeout(() => {
+        refetch();
+      }, 1000);
     }
     setIsAccepting(false);
   };

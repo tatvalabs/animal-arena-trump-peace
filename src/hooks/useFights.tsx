@@ -60,7 +60,6 @@ export const useFights = () => {
         setFights([]);
       } else {
         console.log('Fetched fights:', data);
-        // Map the data to ensure it matches our Fight interface
         const fightsData = data?.map(fight => ({
           id: fight.id,
           title: fight.title,
@@ -119,9 +118,7 @@ export const useFights = () => {
         return { data: null, error };
       }
 
-      // Immediately refetch fights to update the UI
       await fetchFights();
-      
       return { data, error: null };
     } catch (error) {
       console.error('Unexpected error creating fight:', error);
@@ -135,23 +132,43 @@ export const useFights = () => {
     console.log('Accepting fight invitation:', fightId, opponentAnimal);
 
     try {
-      const { error } = await supabase
+      // First, get the current fight data to check if it's still pending
+      const { data: currentFight, error: fetchError } = await supabase
+        .from('fights')
+        .select('*')
+        .eq('id', fightId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching current fight:', fetchError);
+        return { error: fetchError };
+      }
+
+      console.log('Current fight data:', currentFight);
+
+      // Update the fight with opponent acceptance
+      const { data: updatedFight, error: updateError } = await supabase
         .from('fights')
         .update({ 
           opponent_accepted: true,
           opponent_animal: opponentAnimal,
           status: 'accepted',
-          opponent_accepted_at: new Date().toISOString()
+          opponent_accepted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
-        .eq('id', fightId);
+        .eq('id', fightId)
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Fight acceptance error:', error);
-        return { error };
+      if (updateError) {
+        console.error('Fight acceptance error:', updateError);
+        return { error: updateError };
       }
 
+      console.log('Fight updated successfully:', updatedFight);
+
       // Create activity record
-      await supabase
+      const { error: activityError } = await supabase
         .from('fight_activities')
         .insert([{
           fight_id: fightId,
@@ -160,7 +177,11 @@ export const useFights = () => {
           message: `💪 Accepted fight invitation as ${opponentAnimal}! The battle begins! ⚔️`
         }]);
 
-      // Refetch fights
+      if (activityError) {
+        console.error('Error creating activity:', activityError);
+      }
+
+      // Force refetch fights to ensure UI updates
       await fetchFights();
       
       return { error: null };
@@ -178,7 +199,8 @@ export const useFights = () => {
         .from('fights')
         .update({ 
           mediator_id: user.id,
-          status: 'in-progress'
+          status: 'in-progress',
+          updated_at: new Date().toISOString()
         })
         .eq('id', fightId);
 
@@ -203,7 +225,8 @@ export const useFights = () => {
         .from('fights')
         .update({ 
           resolution,
-          status: 'resolved'
+          status: 'resolved',
+          updated_at: new Date().toISOString()
         })
         .eq('id', fightId);
 
