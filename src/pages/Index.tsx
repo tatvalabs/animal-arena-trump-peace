@@ -270,7 +270,7 @@ const Index = () => {
                 </TabsContent>
 
                 <TabsContent value="actions" className="space-y-4">
-                  {pendingMediatorRequests.length === 0 ? (
+                  {myMediatorRequests.length === 0 ? (
                     <div className="text-center py-12">
                       <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-gray-600 mb-2">No actions required</h3>
@@ -288,7 +288,7 @@ const Index = () => {
                         </p>
                       </div>
                       <div className="grid gap-4">
-                        {pendingMediatorRequests.map((request) => (
+                        {myMediatorRequests.map((request) => (
                           <Card key={request.id} className="border-red-200 bg-red-50">
                             <CardHeader className="pb-3">
                               <div className="flex justify-between items-start">
