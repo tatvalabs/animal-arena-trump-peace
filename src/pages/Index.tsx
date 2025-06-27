@@ -150,6 +150,70 @@ const Index = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Priority Actions Banner */}
+            {actionsNeeded > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center mb-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+                  <h3 className="font-semibold text-red-800">Actions Required</h3>
+                </div>
+                
+                {fightInvites.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-red-700 mb-2">Fight Invitations ({fightInvites.length})</h4>
+                    <div className="space-y-2">
+                      {fightInvites.map((fight) => (
+                        <Card key={fight.id} className="border-orange-200 bg-orange-50">
+                          <CardContent className="p-3">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium text-orange-800">{fight.title}</p>
+                                <p className="text-xs text-orange-600">Invited by: {fight.profiles?.username || fight.profiles?.email}</p>
+                              </div>
+                              <Button 
+                                onClick={() => handleViewFight(fight.id)}
+                                size="sm"
+                                className="bg-orange-600 hover:bg-orange-700"
+                              >
+                                Respond
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {myMediatorRequests.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-red-700 mb-2">Mediator Requests ({myMediatorRequests.length})</h4>
+                    <div className="space-y-2">
+                      {myMediatorRequests.map((request) => (
+                        <Card key={request.id} className="border-blue-200 bg-blue-50">
+                          <CardContent className="p-3">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium text-blue-800">{request.fights?.title}</p>
+                                <p className="text-xs text-blue-600">Mediator: {request.profiles?.username || request.profiles?.email}</p>
+                              </div>
+                              <Button 
+                                onClick={() => setCurrentView('profile')}
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                Review
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             
             {fightsLoading ? (
               <div className="text-center py-8">
@@ -157,7 +221,7 @@ const Index = () => {
               </div>
             ) : (
               <Tabs defaultValue="my-fights" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="my-fights" className="flex items-center space-x-2">
                     <Shield className="w-4 h-4" />
                     <span>My Fights ({myFights.length})</span>
@@ -174,13 +238,6 @@ const Index = () => {
                     <span>Mediator Requests ({myMediatorRequests.length})</span>
                     {myMediatorRequests.length > 0 && (
                       <Badge className="bg-blue-100 text-blue-800 ml-1">!</Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="actions" className="flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Actions ({actionsNeeded})</span>
-                    {actionsNeeded > 0 && (
-                      <Badge className="bg-red-100 text-red-800 ml-1">!</Badge>
                     )}
                   </TabsTrigger>
                 </TabsList>
@@ -263,68 +320,6 @@ const Index = () => {
                       <div className="grid gap-4">
                         {myMediatorRequests.map((request) => (
                           <MediatorRequestCard key={request.id} request={request} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="actions" className="space-y-4">
-                  {myMediatorRequests.length === 0 ? (
-                    <div className="text-center py-12">
-                      <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">No actions required</h3>
-                      <p className="text-gray-500">All requests have been reviewed</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                        <div className="flex items-center">
-                          <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-                          <h3 className="font-semibold text-red-800">Mediator Requests Pending</h3>
-                        </div>
-                        <p className="text-sm text-red-700 mt-1">
-                          These mediator requests need your approval or rejection.
-                        </p>
-                      </div>
-                      <div className="grid gap-4">
-                        {myMediatorRequests.map((request) => (
-                          <Card key={request.id} className="border-red-200 bg-red-50">
-                            <CardHeader className="pb-3">
-                              <div className="flex justify-between items-start">
-                                <CardTitle className="text-lg">{request.fights?.title}</CardTitle>
-                                <Badge className="bg-red-100 text-red-800">Action Required</Badge>
-                              </div>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="text-sm text-gray-600">
-                                    <strong>Mediator:</strong> {request.profiles?.username || request.profiles?.email}
-                                  </p>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    <strong>Proposal:</strong> {request.proposal_message}
-                                  </p>
-                                </div>
-                                <div className="flex space-x-2">
-                                  <Button 
-                                    onClick={() => setCurrentView('profile')}
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700"
-                                  >
-                                    Review in Profile
-                                  </Button>
-                                  <Button 
-                                    onClick={() => handleViewFight(request.fight_id)}
-                                    size="sm"
-                                    variant="outline"
-                                  >
-                                    View Fight
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
                         ))}
                       </div>
                     </div>
