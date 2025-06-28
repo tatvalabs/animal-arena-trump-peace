@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +18,7 @@ interface MediatorRequest {
   fights?: {
     title: string;
     creator_id: string;
-    opponent_user_id: string | null;
+    opponent_email: string | null;
   };
   profiles?: {
     username: string | null;
@@ -37,7 +36,7 @@ const MediatorRequestCard: React.FC<MediatorRequestCardProps> = ({ request }) =>
   const { toast } = useToast();
 
   const isCreator = request.fights?.creator_id === user?.id;
-  const isOpponent = request.fights?.opponent_user_id === user?.id;
+  const isOpponent = request.fights?.opponent_email === user?.email;
   const canAccept = (isCreator && !request.accepted_by_creator) || (isOpponent && !request.accepted_by_opponent);
   const hasAccepted = (isCreator && request.accepted_by_creator) || (isOpponent && request.accepted_by_opponent);
   
