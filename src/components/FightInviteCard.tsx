@@ -71,28 +71,39 @@ const FightInviteCard: React.FC<FightInviteCardProps> = ({
     }
 
     setIsAccepting(true);
-    console.log('Accepting fight with animal:', selectedAnimal);
+    console.log('Accepting fight invitation:', { fightId: fight.id, selectedAnimal });
     
-    const { error } = await acceptFightInvitation(fight.id, selectedAnimal);
-    
-    if (error) {
-      console.error('Error accepting fight:', error);
+    try {
+      const { error } = await acceptFightInvitation(fight.id, selectedAnimal);
+      
+      if (error) {
+        console.error('Error accepting fight:', error);
+        toast({
+          title: "Fight Acceptance Failed",
+          description: error.message || "Failed to accept fight invitation. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "🥊 Fight Accepted!",
+          description: `You've joined the fight as ${animals[selectedAnimal as keyof typeof animals]?.name}! Let the battle begin!`,
+        });
+        
+        // Force immediate refetch to update UI
+        setTimeout(() => {
+          refetch();
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Unexpected error during fight acceptance:', err);
       toast({
-        title: "Error",
-        description: "Failed to accept fight invitation.",
+        title: "Unexpected Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "🥊 Fight Accepted!",
-        description: `You've joined the fight as ${animals[selectedAnimal as keyof typeof animals]?.name}!`,
-      });
-      // Force a refetch to update the UI immediately
-      setTimeout(() => {
-        refetch();
-      }, 1000);
+    } finally {
+      setIsAccepting(false);
     }
-    setIsAccepting(false);
   };
 
   const handleViewFight = () => {
@@ -162,7 +173,7 @@ const FightInviteCard: React.FC<FightInviteCardProps> = ({
                     disabled={!selectedAnimal || isAccepting}
                     className="bg-green-600 hover:bg-green-700 flex-1"
                   >
-                    {isAccepting ? 'Accepting...' : '✊ Accept Fight'}
+                    {isAccepting ? 'Accepting Fight...' : '✊ Accept Fight Invitation'}
                   </Button>
                   {onViewFight && (
                     <Button 
@@ -181,7 +192,7 @@ const FightInviteCard: React.FC<FightInviteCardProps> = ({
           {isAlreadyAccepted && (
             <div className="flex items-center justify-between text-sm text-gray-500">
               <div className="flex items-center space-x-1">
-                <span>Accepted on {timeAgo}</span>
+                <span>✅ Fight accepted on {timeAgo}</span>
               </div>
               {onViewFight && (
                 <Button 

@@ -42,7 +42,7 @@ export const useFights = () => {
   const fetchFights = async () => {
     if (!user) return;
 
-    console.log('Fetching fights for user:', user.id);
+    console.log('Fetching fights for user:', user.id, user.email);
     setLoading(true);
 
     try {
@@ -127,12 +127,15 @@ export const useFights = () => {
   };
 
   const acceptFightInvitation = async (fightId: string, opponentAnimal: string) => {
-    if (!user) return { error: new Error('No user') };
+    if (!user) {
+      console.error('No user found for fight acceptance');
+      return { error: new Error('No user authenticated') };
+    }
 
-    console.log('Accepting fight invitation:', fightId, opponentAnimal);
+    console.log('Accepting fight invitation:', { fightId, opponentAnimal, userId: user.id, userEmail: user.email });
 
     try {
-      // First, get the current fight data to check if it's still pending
+      // First verify the fight exists and user is invited
       const { data: currentFight, error: fetchError } = await supabase
         .from('fights')
         .select('*')
@@ -144,45 +147,83 @@ export const useFights = () => {
         return { error: fetchError };
       }
 
-      console.log('Current fight data:', currentFight);
+      if (!currentFight) {
+        console.error('Fight not found');
+        return { error: new Error('Fight not found') };
+      }
+
+      // Check if user is actually invited to this fight
+      if (currentFight.opponent_email !== user.email) {
+        console.error('User not invited to this fight', { 
+          fightOpponentEmail: currentFight.opponent_email, 
+          userEmail: user.email 
+        });
+        return { error: new Error('You are not invited to this fight') };
+      }
+
+      if (currentFight.opponent_accepted) {
+        console.error('Fight already accepted');
+        return { error: new Error('Fight invitation already accepted') };
+      }
+
+      console.log('Current fight data before update:', currentFight);
 
       // Update the fight with opponent acceptance
+      const updateData = { 
+        opponent_accepted: true,
+        opponent_animal: opponentAnimal,
+        status: 'accepted',
+        opponent_accepted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Updating fight with data:', updateData);
+
       const { data: updatedFight, error: updateError } = await supabase
         .from('fights')
-        .update({ 
-          opponent_accepted: true,
-          opponent_animal: opponentAnimal,
-          status: 'accepted',
-          opponent_accepted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', fightId)
         .select()
         .single();
 
       if (updateError) {
-        console.error('Fight acceptance error:', updateError);
+        console.error('Fight acceptance update error:', updateError);
         return { error: updateError };
       }
 
       console.log('Fight updated successfully:', updatedFight);
 
       // Create activity record
-      const { error: activityError } = await supabase
-        .from('fight_activities')
-        .insert([{
-          fight_id: fightId,
-          user_id: user.id,
-          activity_type: 'fight_accepted',
-          message: `💪 Accepted fight invitation as ${opponentAnimal}! The battle begins! ⚔️`
-        }]);
+      try {
+        const { error: activityError } = await supabase
+          .from('fight_activities')
+          .insert([{
+            fight_id: fightId,
+            user_id: user.id,
+            activity_type: 'fight_accepted',
+            message: `💪 Accepted fight invitation as ${opponentAnimal}! The battle begins! ⚔️`
+          }]);
 
-      if (activityError) {
-        console.error('Error creating activity:', activityError);
+        if (activityError) {
+          console.error('Error creating activity (non-blocking):', activityError);
+        }
+      } catch (activityErr) {
+        console.error('Activity creation failed (non-blocking):', activityErr);
       }
 
-      // Force refetch fights to ensure UI updates
-      await fetchFights();
+      // Force immediate UI update by updating local state
+      setFights(prevFights => 
+        prevFights.map(fight => 
+          fight.id === fightId 
+            ? { ...fight, ...updateData }
+            : fight
+        )
+      );
+
+      // Fetch fresh data to ensure consistency
+      setTimeout(() => {
+        fetchFights();
+      }, 500);
       
       return { error: null };
     } catch (error) {
@@ -194,20 +235,33 @@ export const useFights = () => {
   const takeFight = async (fightId: string) => {
     if (!user) return { error: new Error('No user') };
 
+    console.log('Taking fight as mediator:', fightId);
+
     try {
+      const updateData = { 
+        mediator_id: user.id,
+        status: 'in-progress',
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await supabase
         .from('fights')
-        .update({ 
-          mediator_id: user.id,
-          status: 'in-progress',
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', fightId);
 
       if (error) {
         console.error('Take fight error:', error);
         return { error };
       }
+
+      // Update local state immediately
+      setFights(prevFights => 
+        prevFights.map(fight => 
+          fight.id === fightId 
+            ? { ...fight, ...updateData }
+            : fight
+        )
+      );
 
       await fetchFights();
       return { error: null };
@@ -220,20 +274,33 @@ export const useFights = () => {
   const resolveFight = async (fightId: string, resolution: string) => {
     if (!user) return { error: new Error('No user') };
 
+    console.log('Resolving fight:', fightId, resolution);
+
     try {
+      const updateData = { 
+        resolution,
+        status: 'resolved',
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await supabase
         .from('fights')
-        .update({ 
-          resolution,
-          status: 'resolved',
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', fightId);
 
       if (error) {
         console.error('Resolve fight error:', error);
         return { error };
       }
+
+      // Update local state immediately
+      setFights(prevFights => 
+        prevFights.map(fight => 
+          fight.id === fightId 
+            ? { ...fight, ...updateData }
+            : fight
+        )
+      );
 
       await fetchFights();
       return { error: null };

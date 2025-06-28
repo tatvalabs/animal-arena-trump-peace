@@ -84,6 +84,17 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
   const isInvited = fight?.opponent_email === user?.email && fight?.creator_id !== user?.id;
   const canAcceptFight = isInvited && !fight?.opponent_accepted;
 
+  console.log('FightDetailPage debug:', {
+    fightId,
+    userId: user?.id,
+    userEmail: user?.email,
+    fightOpponentEmail: fight?.opponent_email,
+    isInvited,
+    canAcceptFight,
+    fightStatus: fight?.status,
+    opponentAccepted: fight?.opponent_accepted
+  });
+
   useEffect(() => {
     if (fightId) {
       fetchFightActivities();
@@ -161,28 +172,39 @@ const FightDetailPage: React.FC<FightDetailPageProps> = ({ fightId, onBack }) =>
     }
 
     setIsAccepting(true);
-    console.log('Accepting fight with animal:', selectedAnimal);
+    console.log('Accepting fight from detail page:', { fightId, selectedAnimal });
     
-    const { error } = await acceptFightInvitation(fightId, selectedAnimal);
-    
-    if (error) {
-      console.error('Error accepting fight:', error);
+    try {
+      const { error } = await acceptFightInvitation(fightId, selectedAnimal);
+      
+      if (error) {
+        console.error('Error accepting fight:', error);
+        toast({
+          title: "Fight Acceptance Failed",
+          description: error.message || "Failed to accept fight invitation. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "🥊 Fight Accepted!",
+          description: `You've joined the fight as ${animals[selectedAnimal as keyof typeof animals]?.name}! The battle begins!`,
+        });
+        
+        // Force immediate refetch
+        setTimeout(() => {
+          refetch();
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Unexpected error during fight acceptance:', err);
       toast({
-        title: "Error",
-        description: "Failed to accept fight invitation.",
+        title: "Unexpected Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "🥊 Fight Accepted!",
-        description: `You've joined the fight as ${animals[selectedAnimal as keyof typeof animals]?.name}!`,
-      });
-      // Force a refetch to update the UI immediately
-      setTimeout(() => {
-        refetch();
-      }, 1000);
+    } finally {
+      setIsAccepting(false);
     }
-    setIsAccepting(false);
   };
 
   const handleWatch = () => {
