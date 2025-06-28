@@ -35,6 +35,27 @@ export const useFights = () => {
   useEffect(() => {
     if (user) {
       fetchFights();
+      
+      // Set up real-time subscription for fight updates
+      const subscription = supabase
+        .channel('fights_changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'fights' 
+          }, 
+          (payload) => {
+            console.log('Real-time fight update:', payload);
+            // Refetch fights when any fight changes
+            fetchFights();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
     }
   }, [user]);
 
@@ -167,7 +188,7 @@ export const useFights = () => {
 
       console.log('Current fight data before update:', currentFight);
 
-      // Update the fight with opponent acceptance - using .select() without .single()
+      // Update the fight with opponent acceptance
       const updateData = { 
         opponent_accepted: true,
         opponent_animal: opponentAnimal,
@@ -178,7 +199,6 @@ export const useFights = () => {
 
       console.log('Updating fight with data:', updateData);
 
-      // Use .select() to get the updated data back, then check if we got exactly one row
       const { data: updatedRows, error: updateError } = await supabase
         .from('fights')
         .update(updateData)
@@ -221,19 +241,8 @@ export const useFights = () => {
         console.error('Activity creation failed (non-blocking):', activityErr);
       }
 
-      // Force immediate UI update by updating local state
-      setFights(prevFights => 
-        prevFights.map(fight => 
-          fight.id === fightId 
-            ? { ...fight, ...updateData }
-            : fight
-        )
-      );
-
-      // Fetch fresh data to ensure consistency
-      setTimeout(() => {
-        fetchFights();
-      }, 500);
+      // Force immediate refresh of all fight data
+      await fetchFights();
       
       return { error: null };
     } catch (error) {
@@ -264,15 +273,7 @@ export const useFights = () => {
         return { error };
       }
 
-      // Update local state immediately
-      setFights(prevFights => 
-        prevFights.map(fight => 
-          fight.id === fightId 
-            ? { ...fight, ...updateData }
-            : fight
-        )
-      );
-
+      // Force immediate refresh
       await fetchFights();
       return { error: null };
     } catch (error) {
@@ -303,15 +304,7 @@ export const useFights = () => {
         return { error };
       }
 
-      // Update local state immediately
-      setFights(prevFights => 
-        prevFights.map(fight => 
-          fight.id === fightId 
-            ? { ...fight, ...updateData }
-            : fight
-        )
-      );
-
+      // Force immediate refresh
       await fetchFights();
       return { error: null };
     } catch (error) {

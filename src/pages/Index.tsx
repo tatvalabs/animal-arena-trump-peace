@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CreateFight from '@/components/CreateFight';
 import FightTimeline from '@/components/FightTimeline';
@@ -21,10 +20,17 @@ import FightCard from '@/components/FightCard';
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  const { fights, loading: fightsLoading } = useFights();
+  const { fights, loading: fightsLoading, refetch } = useFights();
   const { requests } = useMediatorRequests();
   const [currentView, setCurrentView] = useState('fights');
   const [selectedFightId, setSelectedFightId] = useState<string | null>(null);
+
+  // Auto-refresh fights data when view changes to ensure latest data
+  useEffect(() => {
+    if (user && (currentView === 'browse' || currentView === 'timeline')) {
+      refetch();
+    }
+  }, [currentView, user, refetch]);
 
   if (authLoading || profileLoading) {
     return (
@@ -43,6 +49,8 @@ const Index = () => {
 
   const handleFightCreated = () => {
     setCurrentView('fights');
+    // Refresh data after fight creation
+    setTimeout(() => refetch(), 500);
   };
 
   const handleViewFight = (fightId: string) => {
@@ -53,6 +61,8 @@ const Index = () => {
   const handleBackFromFight = () => {
     setSelectedFightId(null);
     setCurrentView('fights');
+    // Refresh data when returning from fight detail
+    setTimeout(() => refetch(), 500);
   };
 
   const userRole = profile?.role || 'fighter';
@@ -180,6 +190,13 @@ const Index = () => {
                 <h2 className="text-3xl font-bold text-gray-800">Browse All Fights</h2>
                 <p className="text-gray-600 mt-1">Global timeline of all ongoing conflicts</p>
               </div>
+              <Button 
+                onClick={() => refetch()}
+                variant="outline"
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                🔄 Refresh
+              </Button>
             </div>
             
             <div className="space-y-6">
@@ -195,7 +212,7 @@ const Index = () => {
                 </div>
               ) : (
                 fights
-                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
                   .map((fight) => (
                     <FightCard 
                       key={fight.id} 
@@ -216,12 +233,21 @@ const Index = () => {
                 <h2 className="text-3xl font-bold text-gray-800">My Activity Timeline</h2>
                 <p className="text-gray-600 mt-1">Historical record of your fights and mediations</p>
               </div>
-              <Button 
-                onClick={() => setCurrentView('fights')}
-                variant="outline"
-              >
-                Back to My Fights
-              </Button>
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={() => refetch()}
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
+                  🔄 Refresh
+                </Button>
+                <Button 
+                  onClick={() => setCurrentView('fights')}
+                  variant="outline"
+                >
+                  Back to My Fights
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-6">
@@ -237,7 +263,7 @@ const Index = () => {
                 </div>
               ) : (
                 [...myFights, ...myMediatedFights]
-                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
                   .map((fight) => (
                     <FightCard 
                       key={fight.id} 
