@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -168,7 +167,7 @@ export const useFights = () => {
 
       console.log('Current fight data before update:', currentFight);
 
-      // Update the fight with opponent acceptance
+      // Update the fight with opponent acceptance - using .select() without .single()
       const updateData = { 
         opponent_accepted: true,
         opponent_animal: opponentAnimal,
@@ -179,18 +178,29 @@ export const useFights = () => {
 
       console.log('Updating fight with data:', updateData);
 
-      const { data: updatedFight, error: updateError } = await supabase
+      // Use .select() to get the updated data back, then check if we got exactly one row
+      const { data: updatedRows, error: updateError } = await supabase
         .from('fights')
         .update(updateData)
         .eq('id', fightId)
-        .select()
-        .single();
+        .select();
 
       if (updateError) {
         console.error('Fight acceptance update error:', updateError);
         return { error: updateError };
       }
 
+      if (!updatedRows || updatedRows.length === 0) {
+        console.error('No rows updated - fight may not exist or permission denied');
+        return { error: new Error('Failed to update fight - no rows affected') };
+      }
+
+      if (updatedRows.length > 1) {
+        console.error('Multiple rows updated - this should not happen');
+        return { error: new Error('Multiple fights updated - data inconsistency') };
+      }
+
+      const updatedFight = updatedRows[0];
       console.log('Fight updated successfully:', updatedFight);
 
       // Create activity record
