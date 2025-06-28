@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -19,7 +18,6 @@ interface MediatorRequest {
   fights?: {
     title: string;
     creator_id: string;
-    opponent_user_id: string | null;
     opponent_email: string | null;
   };
   profiles?: {
@@ -46,7 +44,7 @@ export const useMediatorRequests = () => {
       .from('mediator_requests')
       .select(`
         *,
-        fights(title, creator_id, opponent_user_id, opponent_email),
+        fights(title, creator_id, opponent_email),
         profiles(username, email)
       `)
       .order('created_at', { ascending: false });
