@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -32,35 +32,12 @@ export const useFights = () => {
   const [fights, setFights] = useState<Fight[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchFights();
-      
-      // Set up real-time subscription for fight updates
-      const subscription = supabase
-        .channel('fights_changes')
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'fights' 
-          }, 
-          (payload) => {
-            console.log('Real-time fight update:', payload);
-            // Refetch fights when any fight changes
-            fetchFights();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        subscription.unsubscribe();
-      };
+  const fetchFights = useCallback(async () => {
+    if (!user) {
+      setFights([]);
+      setLoading(false);
+      return;
     }
-  }, [user]);
-
-  const fetchFights = async () => {
-    if (!user) return;
 
     console.log('Fetching fights for user:', user.id, user.email);
     setLoading(true);
@@ -94,7 +71,7 @@ export const useFights = () => {
           opponent_accepted: fight.opponent_accepted,
           opponent_accepted_at: fight.opponent_accepted_at,
           created_at: fight.created_at,
-          updated_at: fight.updated_at || fight.created_at, // Fallback to created_at if updated_at is null
+          updated_at: fight.updated_at || fight.created_at,
           profiles: fight.profiles,
           mediator_profile: fight.mediator_profile
         })) || [];
@@ -106,7 +83,11 @@ export const useFights = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchFights();
+  }, [fetchFights]);
 
   const createFight = async (fightData: {
     title: string;

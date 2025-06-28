@@ -28,9 +28,12 @@ const Index = () => {
   // Auto-refresh fights data when view changes to ensure latest data
   useEffect(() => {
     if (user && (currentView === 'browse' || currentView === 'timeline')) {
-      refetch();
+      const timer = setTimeout(() => {
+        refetch();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [currentView, user, refetch]);
+  }, [currentView, user]);
 
   if (authLoading || profileLoading) {
     return (
@@ -65,23 +68,24 @@ const Index = () => {
     setTimeout(() => refetch(), 500);
   };
 
+  // Safe data access with fallbacks
   const userRole = profile?.role || 'fighter';
-  const myFights = fights.filter(f => f.creator_id === user.id);
-  const pendingFights = fights.filter(f => f.status === 'pending');
-  const myMediatedFights = fights.filter(f => f.mediator_id === user.id);
+  const myFights = fights?.filter(f => f?.creator_id === user?.id) || [];
+  const pendingFights = fights?.filter(f => f?.status === 'pending') || [];
+  const myMediatedFights = fights?.filter(f => f?.mediator_id === user?.id) || [];
   
   // Fight invites (fights where user is invited as opponent via email)
-  const fightInvites = fights.filter(f => 
-    f.opponent_email === user.email && 
-    f.creator_id !== user.id && 
-    !f.opponent_accepted
-  );
+  const fightInvites = fights?.filter(f => 
+    f?.opponent_email === user?.email && 
+    f?.creator_id !== user?.id && 
+    !f?.opponent_accepted
+  ) || [];
   
   // Mediator requests that need user action
-  const myMediatorRequests = requests.filter(r => 
-    (r.fights?.creator_id === user.id || r.fights?.opponent_email === user.email) &&
-    r.status === 'pending'
-  );
+  const myMediatorRequests = requests?.filter(r => 
+    (r?.fights?.creator_id === user?.id || r?.fights?.opponent_email === user?.email) &&
+    r?.status === 'pending'
+  ) || [];
   
   // Count of actions needed
   const actionsNeeded = fightInvites.length + myMediatorRequests.length;
@@ -204,7 +208,7 @@ const Index = () => {
                 <div className="text-center py-8">
                   <p className="text-gray-600">Loading fights...</p>
                 </div>
-              ) : fights.length === 0 ? (
+              ) : !fights || fights.length === 0 ? (
                 <div className="text-center py-12">
                   <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">No fights yet</h3>
@@ -213,8 +217,8 @@ const Index = () => {
               ) : (
                 fights
                   .sort((a, b) => {
-                    const aTime = new Date(a.updated_at || a.created_at).getTime();
-                    const bTime = new Date(b.updated_at || b.created_at).getTime();
+                    const aTime = new Date(a?.updated_at || a?.created_at || 0).getTime();
+                    const bTime = new Date(b?.updated_at || b?.created_at || 0).getTime();
                     return bTime - aTime;
                   })
                   .map((fight) => (
@@ -268,8 +272,8 @@ const Index = () => {
               ) : (
                 [...myFights, ...myMediatedFights]
                   .sort((a, b) => {
-                    const aTime = new Date(a.updated_at || a.created_at).getTime();
-                    const bTime = new Date(b.updated_at || b.created_at).getTime();
+                    const aTime = new Date(a?.updated_at || a?.created_at || 0).getTime();
+                    const bTime = new Date(b?.updated_at || b?.created_at || 0).getTime();
                     return bTime - aTime;
                   })
                   .map((fight) => (
@@ -326,7 +330,7 @@ const Index = () => {
               <div className="text-center py-8">
                 <p className="text-gray-600">Loading fights...</p>
               </div>
-            ) : myMediatedFights.filter(f => f.status === 'resolved').length === 0 ? (
+            ) : myMediatedFights.filter(f => f?.status === 'resolved').length === 0 ? (
               <div className="text-center py-12">
                 <Star className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">No resolved cases yet</h3>
@@ -334,7 +338,7 @@ const Index = () => {
               </div>
             ) : (
               <div className="grid gap-6">
-                {myMediatedFights.filter(f => f.status === 'resolved').map((fight) => (
+                {myMediatedFights.filter(f => f?.status === 'resolved').map((fight) => (
                   <FightCard 
                     key={fight.id} 
                     fight={fight} 
