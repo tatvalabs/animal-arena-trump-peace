@@ -212,7 +212,11 @@ const Index = () => {
                 </div>
               ) : (
                 fights
-                  .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+                  .sort((a, b) => {
+                    const aTime = new Date(a.updated_at || a.created_at).getTime();
+                    const bTime = new Date(b.updated_at || b.created_at).getTime();
+                    return bTime - aTime;
+                  })
                   .map((fight) => (
                     <FightCard 
                       key={fight.id} 
@@ -263,7 +267,11 @@ const Index = () => {
                 </div>
               ) : (
                 [...myFights, ...myMediatedFights]
-                  .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+                  .sort((a, b) => {
+                    const aTime = new Date(a.updated_at || a.created_at).getTime();
+                    const bTime = new Date(b.updated_at || b.created_at).getTime();
+                    return bTime - aTime;
+                  })
                   .map((fight) => (
                     <FightCard 
                       key={fight.id} 

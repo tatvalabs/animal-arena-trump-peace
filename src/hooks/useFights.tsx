@@ -94,7 +94,7 @@ export const useFights = () => {
           opponent_accepted: fight.opponent_accepted,
           opponent_accepted_at: fight.opponent_accepted_at,
           created_at: fight.created_at,
-          updated_at: fight.updated_at,
+          updated_at: fight.updated_at || fight.created_at, // Fallback to created_at if updated_at is null
           profiles: fight.profiles,
           mediator_profile: fight.mediator_profile
         })) || [];
