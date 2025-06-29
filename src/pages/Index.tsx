@@ -33,9 +33,10 @@ const Index = () => {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [currentView, user]);
+  }, [currentView, user, refetch]);
 
-  if (authLoading || profileLoading) {
+  // Show loading state
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -46,8 +47,21 @@ const Index = () => {
     );
   }
 
+  // Show auth page if not authenticated
   if (!user) {
     return <AuthPage />;
+  }
+
+  // Show loading for profile after user is authenticated
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-600">Setting up your profile...</p>
+        </div>
+      </div>
+    );
   }
 
   const handleFightCreated = () => {
