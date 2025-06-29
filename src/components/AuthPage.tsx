@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,16 @@ const AuthPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both email and password.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -27,7 +36,7 @@ const AuthPage = () => {
         if (error) {
           toast({
             title: "Login Error",
-            description: error.message,
+            description: error.message || "Failed to sign in. Please check your credentials.",
             variant: "destructive"
           });
         } else {
@@ -41,16 +50,26 @@ const AuthPage = () => {
         if (error) {
           toast({
             title: "Sign Up Error",
-            description: error.message,
+            description: error.message || "Failed to create account. Please try again.",
             variant: "destructive"
           });
         } else {
           toast({
             title: "Account Created! 🎉",
-            description: "Please check your email to verify your account."
+            description: "You can now sign in with your credentials."
           });
+          // Switch to login mode after successful signup
+          setIsLogin(true);
+          setPassword('');
         }
       }
+    } catch (error) {
+      console.error('Auth error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -79,6 +98,7 @@ const AuthPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="mt-1"
+                placeholder="Enter your email"
               />
             </div>
             
@@ -91,6 +111,7 @@ const AuthPage = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="mt-1"
+                  placeholder="Choose a username"
                 />
               </div>
             )}
@@ -104,6 +125,8 @@ const AuthPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="mt-1"
+                placeholder="Enter your password"
+                minLength={6}
               />
             </div>
             
@@ -118,8 +141,12 @@ const AuthPage = () => {
           
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setPassword('');
+              }}
               className="text-green-600 hover:underline"
+              type="button"
             >
               {isLogin 
                 ? "Don't have an account? Sign up" 
